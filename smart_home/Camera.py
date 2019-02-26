@@ -10,6 +10,7 @@ from . import NoDevice, postRequest, _BASE_URL
 _GETHOMEDATA_REQ = _BASE_URL + "api/gethomedata"
 _GETCAMERAPICTURE_REQ = _BASE_URL + "api/getcamerapicture"
 _GETEVENTSUNTIL_REQ = _BASE_URL + "api/geteventsuntil"
+_CAM_CHANGE_STATUS = "/command/changestatus?status=%s"            # "on"|"off"
 
 
 class CameraData:
@@ -524,3 +525,30 @@ class CameraData:
         ):
             return True
         return False
+
+    def presenceStatus(self, mode, camera=None, home=None, cid=None):
+        """
+        Turn the camera on or off (current status in camera properties)
+        and return the current status
+        """
+        url = self.presenceUrl(home=home, camera=camera) or self.cameraById(cid=cid)
+        if not url or mode not in ("on", "off"):
+            return None
+        r = cameraCommand(url, _CAM_CHANGE_STATUS, mode)
+        return mode if r and r["status"] == "ok" else None
+
+
+    def presenceUrl(self, camera=None, home=None, cid=None, setting=None):
+        """
+        Return valid URL for camera
+        """
+        camera = self.cameraByName(home=home, camera=camera) or self.cameraById(cid=cid)
+        if camera["type"] not in ["NOC", "NACamera"]: return None # Not a presence camera
+        vpnUrl, localUrl = self.cameraUrls(cid=camera["id"])
+        if localUrl:
+            return localUrl
+        return vpnUrl
+
+def cameraCommand(cameraUrl, command, parameters=None):
+    url = cameraUrl + (command % parameters if parameters else command)
+    return postRequest(url)

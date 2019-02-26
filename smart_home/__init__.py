@@ -35,7 +35,7 @@ def postRequest(url, params=None, timeout=10):
                 if params
                 else urllib.request.urlopen(req, timeout=timeout)
             )
-        except urllib.error.URLError:
+        except (urllib.error.URLError, urllib.error.HTTPError):
             print(traceback.format_exc())
             return None
     else:
