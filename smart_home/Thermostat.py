@@ -129,7 +129,8 @@ class HomeData:
             "home_id": home_id,
             "schedule_id": schedule_id,
         }
-        return postRequest(_SWITCHHOMESCHEDULE_REQ, postParams)
+        resp = postRequest(_SWITCHHOMESCHEDULE_REQ, postParams)
+        LOG.debug("Response: %s", resp)
 
 
 
