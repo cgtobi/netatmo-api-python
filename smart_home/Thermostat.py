@@ -94,8 +94,8 @@ class HomeData:
             home = self.default_home
         for key, value in self.homes.items():
             if value["name"] == home:
-                LOG.debug("Home ID: %s", self.homes[key]['id'])
-                LOG.debug("Default home: %s", self.default_home)
+                LOG.debug(self.homes[key]['id'])
+                LOG.debug(self.default_home)
                 if "therm_schedules" in self.homes[key]:
                     return self.homes[key]["id"]
 
