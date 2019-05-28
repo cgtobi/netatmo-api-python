@@ -102,7 +102,7 @@ class HomeData:
                 if "therm_schedules" in self.homes[key]:
                     return self.homes[key]["id"]
 
-    def getSelectedSchedule(self, home=None):
+    def getSelectedschedule(self, home=None):
         if not home:
             home = self.default_home
         self.schedule = self.schedules[home]
