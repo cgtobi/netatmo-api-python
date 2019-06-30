@@ -116,31 +116,43 @@ class WeatherStationData:
         return conditions
 
     def lastData(self, station=None, exclude=0):
-        s = self.stationByName(station)
+        if station is not None:
+            stations = [station]
+        else:
+            stations = [s["station_name"] for s in list(self.stations.values())]
         # Breaking change from Netatmo : dashboard_data no longer available if station lost
-        if not s or "dashboard_data" not in s:
-            return None
         lastD = {}
-        # Define oldest acceptable sensor measure event
-        limit = (time.time() - exclude) if exclude else 0
-        ds = s["dashboard_data"]
-        if "module_name" in s and ds["time_utc"] > limit:
-            lastD[s["module_name"]] = ds.copy()
-            lastD[s["module_name"]]["When"] = lastD[s["module_name"]].pop("time_utc")
-            lastD[s["module_name"]]["wifi_status"] = s["wifi_status"]
-        for module in s["modules"]:
-            if "dashboard_data" not in module or "module_name" not in module:
-                continue
-            ds = module["dashboard_data"]
-            if "time_utc" in ds and ds["time_utc"] > limit:
-                lastD[module["module_name"]] = ds.copy()
-                lastD[module["module_name"]]["When"] = lastD[module["module_name"]].pop(
+        for st in stations:
+            s = self.stationByName(st)
+            if not s or "dashboard_data" not in s:
+                return None
+            # Define oldest acceptable sensor measure event
+            limit = (time.time() - exclude) if exclude else 0
+            ds = s["dashboard_data"]
+            if "module_name" in s and ds["time_utc"] > limit:
+                lastD[s["module_name"]] = ds.copy()
+                lastD[s["module_name"]]["When"] = lastD[s["module_name"]].pop(
                     "time_utc"
                 )
-                # For potential use, add battery and radio coverage information to module data if present
-                for i in ("rf_status", "battery_vp", "battery_percent", "wifi_status"):
-                    if i in module:
-                        lastD[module["module_name"]][i] = module[i]
+                lastD[s["module_name"]]["wifi_status"] = s["wifi_status"]
+            for module in s["modules"]:
+                if "dashboard_data" not in module or "module_name" not in module:
+                    continue
+                ds = module["dashboard_data"]
+                if "time_utc" in ds and ds["time_utc"] > limit:
+                    lastD[module["module_name"]] = ds.copy()
+                    lastD[module["module_name"]]["When"] = lastD[
+                        module["module_name"]
+                    ].pop("time_utc")
+                    # For potential use, add battery and radio coverage information to module data if present
+                    for i in (
+                        "rf_status",
+                        "battery_vp",
+                        "battery_percent",
+                        "wifi_status",
+                    ):
+                        if i in module:
+                            lastD[module["module_name"]][i] = module[i]
         return lastD
 
     def checkNotUpdated(self, station=None, delay=3600):
