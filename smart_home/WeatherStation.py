@@ -46,10 +46,15 @@ class WeatherStationData:
         self.default_station = list(self.stations.values())[0]["station_name"]
 
     def modulesNamesList(self, station=None):
-        res = set([m["module_name"] for m in self.modules.values()])
         if station:
-            res.add(self.stationByName(station)["module_name"])
+            res = set()
+            s = self.stationByName(station)
+            if s is not None:
+                res.add(s["module_name"])
+                for m in s["modules"]:
+                    res.add(m["module_name"])
         else:
+            res = set([m["module_name"] for m in self.modules.values()])
             for id, station in self.stations.items():
                 res.add(station["module_name"])
         return list(res)
