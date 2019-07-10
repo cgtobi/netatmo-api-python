@@ -43,38 +43,42 @@ class HomeData:
         self.setpoint_duration = {}
         for item in self.rawData:
             nameHome = item.get("name")
+            idHome = item.get("id")
             if not nameHome:
                 raise NoDevice('No key ["name"] in %s', item.keys())
+            if not idHome:
+                raise NoDevice('No key ["id"] in %s', item.keys())
             if "modules" in item:
-                if nameHome not in self.modules:
-                    self.modules[nameHome] = {}
+                if idHome not in self.modules:
+                    self.modules[idHome] = {}
                 for m in item["modules"]:
-                    self.modules[nameHome][m["id"]] = m
-                if nameHome not in self.rooms:
-                    self.rooms[nameHome] = {}
-                if nameHome not in self.schedules:
-                    self.schedules[nameHome] = {}
-                if nameHome not in self.zones:
-                    self.zones[nameHome] = {}
-                if nameHome not in self.setpoint_duration:
-                    self.setpoint_duration[nameHome] = {}
+                    self.modules[idHome][m["id"]] = m
+                if idHome not in self.rooms:
+                    self.rooms[idHome] = {}
+                if idHome not in self.schedules:
+                    self.schedules[idHome] = {}
+                if idHome not in self.zones:
+                    self.zones[idHome] = {}
+                if idHome not in self.setpoint_duration:
+                    self.setpoint_duration[idHome] = {}
                 if "therm_setpoint_default_duration" in item:
-                    self.setpoint_duration[nameHome] = item[
+                    self.setpoint_duration[idHome] = item[
                         "therm_setpoint_default_duration"
                     ]
                 if "rooms" in item:
                     for room in item["rooms"]:
-                        self.rooms[nameHome][room["id"]] = room
+                        self.rooms[idHome][room["id"]] = room
                 if "therm_schedules" in item:
                     self.default_home = item["name"]
+                    self.default_home_id = item["id"]
                     for schedule in item["therm_schedules"]:
-                        self.schedules[nameHome][schedule["id"]] = schedule
+                        self.schedules[idHome][schedule["id"]] = schedule
                     for schedule in item["therm_schedules"]:
                         scheduleId = schedule["id"]
-                        if scheduleId not in self.zones[nameHome]:
-                            self.zones[nameHome][scheduleId] = {}
+                        if scheduleId not in self.zones[idHome]:
+                            self.zones[idHome][scheduleId] = {}
                         for zone in schedule["zones"]:
-                            self.zones[nameHome][scheduleId][zone["id"]] = zone
+                            self.zones[idHome][scheduleId][zone["id"]] = zone
 
     def homeById(self, hid):
         return None if hid not in self.homes else self.homes[hid]
@@ -99,7 +103,8 @@ class HomeData:
     def getSelectedschedule(self, home=None):
         if not home:
             home = self.default_home
-        self.schedule = self.schedules[home]
+        home_id = self.gethomeId(home=home)
+        self.schedule = self.schedules[home_id]
         for key in self.schedule.keys():
             if "selected" in self.schedule[key].keys():
                 return self.schedule[key]
@@ -109,8 +114,8 @@ class HomeData:
             home = self.default_home
         home_id = self.gethomeId(home=home)
         schedules = {
-            self.schedules[home][s]["name"]: self.schedules[home][s]["id"]
-            for s in self.schedules[home]
+            self.schedules[home_id][s]["name"]: self.schedules[home_id][s]["id"]
+            for s in self.schedules[home_id]
         }
         if schedule is None and schedule_id is not None:
             if schedule_id not in list(schedules.values()):
@@ -282,9 +287,10 @@ class HomeStatus(HomeData):
 
     def thermostatType(self, home, rid):
         module_id = None
-        for key in self.home_data.rooms[home]:
+        home_id = self.home_data.gethomeId(home=home)
+        for key in self.home_data.rooms[home_id]:
             if key == rid:
-                for module_id in self.home_data.rooms[home][rid]["module_ids"]:
+                for module_id in self.home_data.rooms[home_id][rid]["module_ids"]:
                     self.module_id = module_id
                     if module_id in self.thermostats:
                         return "NATherm1"

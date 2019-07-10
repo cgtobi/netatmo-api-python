@@ -11,9 +11,10 @@ import smart_home.Thermostat
 
 def test_HomeData(homeData):
     assert homeData.default_home == "MYHOME"
-    assert len(homeData.rooms[homeData.default_home]) == 4
+    assert homeData.default_home_id == "91763b24c43d3e344f424e8b"
+    assert len(homeData.rooms[homeData.default_home_id]) == 4
 
-    assert len(homeData.modules[homeData.default_home]) == 5
+    assert len(homeData.modules[homeData.default_home_id]) == 5
 
     expected = {
         "12:34:56:00:fa:d0": {
@@ -59,7 +60,7 @@ def test_HomeData(homeData):
             "room_id": "3688132631",
         },
     }
-    assert homeData.modules[homeData.default_home] == expected
+    assert homeData.modules[homeData.default_home_id] == expected
 
 
 def test_HomeData_no_data(auth, requests_mock):
