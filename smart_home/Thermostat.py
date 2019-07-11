@@ -100,10 +100,11 @@ class HomeData:
                 if "therm_schedules" in self.homes[key]:
                     return self.homes[key]["id"]
 
-    def getSelectedschedule(self, home=None):
-        if not home:
-            home = self.default_home
-        home_id = self.gethomeId(home=home)
+    def getSelectedschedule(self, home=None, home_id=None):
+        if not home_id:
+            if not home:
+                home = self.default_home
+            home_id = self.gethomeId(home=home)
         self.schedule = self.schedules[home_id]
         for key in self.schedule.keys():
             if "selected" in self.schedule[key].keys():
@@ -143,10 +144,10 @@ class HomeStatus(HomeData):
         self.getAuthToken = authData.accessToken
         self.home_data = HomeData(authData)
 
-        if home_id:
+        if home_id is not None:
             self.home_id = home_id
             LOG.debug("home_id", self.home_id)
-        elif home:
+        elif home is not None:
             self.home_id = self.home_data.gethomeId(home=home)
         else:
             self.home_id = self.home_data.gethomeId(home=self.home_data.default_home)
@@ -247,11 +248,13 @@ class HomeStatus(HomeData):
             setpointmode = room_data["therm_setpoint_mode"]
         return setpointmode
 
-    def getAwaytemp(self, home=None):
-        if not home:
-            home = self.home_data.default_home
-            LOG.debug(self.home_data.default_home)
-        data = self.home_data.getSelectedschedule(home=home)
+    def getAwaytemp(self, home=None, home_id=None):
+        if not home_id:
+            if not home:
+                home = self.home_data.default_home
+                LOG.debug(self.home_data.default_home)
+            home_id = self.home_data.gethomeId(home)
+        data = self.home_data.getSelectedschedule(home_id=home_id)
         return data["away_temp"]
 
     def getHgtemp(self, home=None):
