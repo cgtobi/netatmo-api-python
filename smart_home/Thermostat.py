@@ -41,13 +41,16 @@ class HomeData:
         self.schedules = {}
         self.zones = {}
         self.setpoint_duration = {}
+        self.default_home = None
+        self.default_home_id = None
         for item in self.rawData:
-            nameHome = item.get("name")
             idHome = item.get("id")
-            if not nameHome:
-                raise NoDevice('No key ["name"] in %s', item.keys())
             if not idHome:
                 raise NoDevice('No key ["id"] in %s', item.keys())
+            nameHome = item.get("name")
+            if not nameHome:
+                nameHome = "Unknown"
+                self.homes[idHome]["name"] = nameHome
             if "modules" in item:
                 if idHome not in self.modules:
                     self.modules[idHome] = {}
@@ -69,7 +72,7 @@ class HomeData:
                     for room in item["rooms"]:
                         self.rooms[idHome][room["id"]] = room
                 if "therm_schedules" in item:
-                    self.default_home = item["name"]
+                    self.default_home = nameHome
                     self.default_home_id = item["id"]
                     for schedule in item["therm_schedules"]:
                         self.schedules[idHome][schedule["id"]] = schedule
@@ -166,9 +169,9 @@ class HomeStatus(HomeData):
         self.thermostats = {}
         self.valves = {}
         self.relays = {}
-        for r in self.rawData["rooms"]:
+        for r in self.rawData.get("rooms", []):
             self.rooms[r["id"]] = r
-        for module in self.rawData["modules"]:
+        for module in self.rawData.get("modules", []):
             if module["type"] == "NATherm1":
                 thermostatId = module["id"]
                 if thermostatId not in self.thermostats:

@@ -89,8 +89,11 @@ def test_HomeData_no_home_name(auth, requests_mock):
         json=json_fixture,
         headers={"content-type": "application/json"},
     )
-    with pytest.raises(smart_home.PublicData.NoDevice):
-        assert smart_home.Thermostat.HomeData(auth)
+    # with pytest.raises(smart_home.PublicData.NoDevice):
+    homeData = smart_home.Thermostat.HomeData(auth)
+    home_id = "91763b24c43d3e344f424e8b"
+    print(homeData.homeById(home_id))
+    assert homeData.homeById(home_id)["name"] == "Unknown"
 
 
 def test_HomeData_homeById(homeData):
