@@ -42,19 +42,25 @@ class CameraData:
         self.outdoor_lastEvent = {}
         self.types = {}
         self.default_home = None
+        self.default_home_id = None
         self.default_camera = None
         for item in self.rawData:
+            homeId = item.get("id")
             nameHome = item.get("name")
             if not nameHome:
-                raise NoDevice('No key ["name"] in %s' % item.keys())
-            if nameHome not in self.cameras:
-                self.cameras[nameHome] = {}
-            if nameHome not in self.types:
-                self.types[nameHome] = {}
+                nameHome = "Unknown"
+                self.homes[homeId]["name"] = nameHome
+            if not homeId:
+                raise NoDevice('No key ["id"] in %s' % item.keys())
+            if homeId not in self.cameras:
+                self.cameras[homeId] = {}
+            if homeId not in self.types:
+                self.types[homeId] = {}
             for p in item["persons"]:
                 self.persons[p["id"]] = p
             if "events" in item:
                 self.default_home = item["name"]
+                self.default_home_id = item["id"]
                 for e in item["events"]:
                     if e["type"] == "outdoor":
                         if e["camera_id"] not in self.outdoor_events:
@@ -65,13 +71,13 @@ class CameraData:
                             self.events[e["camera_id"]] = {}
                         self.events[e["camera_id"]][e["time"]] = e
             for c in item["cameras"]:
-                self.cameras[nameHome][c["id"]] = c
+                self.cameras[homeId][c["id"]] = c
                 if c["type"] == "NACamera" and "modules" in c:
                     for m in c["modules"]:
                         self.modules[m["id"]] = m
                         self.modules[m["id"]]["cam_id"] = c["id"]
             for t in item["cameras"]:
-                self.types[nameHome][t["type"]] = t
+                self.types[homeId][t["type"]] = t
         for camera in self.events:
             self.lastEvent[camera] = self.events[camera][
                 sorted(self.events[camera])[-1]
@@ -85,7 +91,7 @@ class CameraData:
         else:
             self.default_module = None
         if self.default_home is not None and len(self.cameras) > 0:
-            self.default_camera = list(self.cameras[self.default_home].values())[0]
+            self.default_camera = list(self.cameras[self.default_home_id].values())[0]
 
     def homeById(self, hid):
         return None if hid not in self.homes else self.homes[hid]
@@ -107,18 +113,21 @@ class CameraData:
         if not camera and not home:
             return self.default_camera
         elif home and camera:
-            if home not in self.cameras:
+            homeId = self.homeByName(home)['id']
+            if homeId not in self.cameras:
                 return None
-            for cam_id in self.cameras[home]:
-                if self.cameras[home][cam_id]["name"] == camera:
-                    return self.cameras[home][cam_id]
+            for cam_id in self.cameras[homeId]:
+                if self.cameras[homeId][cam_id]["name"] == camera:
+                    return self.cameras[homeId][cam_id]
         elif not home and camera:
-            for home, cam_ids in self.cameras.items():
+            for homeId, cam_ids in self.cameras.items():
+                print(homeId)
                 for cam_id in cam_ids:
-                    if self.cameras[home][cam_id]["name"] == camera:
-                        return self.cameras[home][cam_id]
+                    if self.cameras[homeId][cam_id]["name"] == camera:
+                        return self.cameras[homeId][cam_id]
         else:
-            return list(self.cameras[home].values())[0]
+            homeId = self.homeByName(home)['id']
+            return list(self.cameras[homeId].values())[0]
         return None
 
     def moduleById(self, mid):
