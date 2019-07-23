@@ -49,7 +49,13 @@ def test_CameraData_homeByName(cameraHomeData, name, expected):
 
 
 @pytest.mark.parametrize(
-    "cid, expected", [("12:34:56:00:f1:62", "Hall"), ("None", None), (None, None)]
+    "cid, expected",
+    [
+        ("12:34:56:00:f1:62", "Hall"),
+        ("12:34:56:00:a5:a4", "Garden"),
+        ("None", None),
+        (None, None),
+    ],
 )
 def test_CameraData_cameraById(cameraHomeData, cid, expected):
     camera = cameraHomeData.cameraById(cid)
@@ -68,6 +74,7 @@ def test_CameraData_cameraById(cameraHomeData, cid, expected):
         ("Hall", "MYHOME", "12:34:56:00:f1:62"),
         (None, "MYHOME", "12:34:56:00:f1:62"),
         ("", "MYHOME", "12:34:56:00:f1:62"),
+        ("Garden", "MYHOME", "12:34:56:00:a5:a4"),
         pytest.param(
             "InvalidName",
             None,
@@ -95,6 +102,7 @@ def test_CameraData_cameraByName(cameraHomeData, name, home, expected):
         (None, "MYHOME", None, "NACamera"),
         (None, "MYHOME", "12:34:56:00:f1:62", "NACamera"),
         (None, None, "12:34:56:00:f1:62", "NACamera"),
+        ("Garden", None, None, "NOC"),
         ("InvalidName", None, None, None),
         pytest.param(
             None,
