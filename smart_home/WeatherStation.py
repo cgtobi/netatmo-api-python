@@ -62,8 +62,8 @@ class WeatherStationData:
                 res.add(station["module_name"])
         return list(res)
 
-    def stationByName(self, station=None, station_id=None):
-        if not station and not station_id:
+    def stationByName(self, station=None):
+        if not station:
             station = self.default_station
         for i, s in self.stations.items():
             if s["station_name"] == station:
