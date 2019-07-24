@@ -124,7 +124,7 @@ def test_HomeData_getHomeName(homeData):
 def test_HomeData_getSelectedschedule(homeData):
     assert homeData.getSelectedschedule()["name"] == "Default"
     assert homeData.getSelectedschedule("MYHOME")["name"] == "Default"
-    with pytest.raises(smart_home.Thermostat.InvalidHome): 
+    with pytest.raises(smart_home.Thermostat.InvalidHome):
         assert homeData.getSelectedschedule("Unknown")
 
 
