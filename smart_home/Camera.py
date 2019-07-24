@@ -121,7 +121,6 @@ class CameraData:
                     return self.cameras[homeId][cam_id]
         elif not home and camera:
             for homeId, cam_ids in self.cameras.items():
-                print(homeId)
                 for cam_id in cam_ids:
                     if self.cameras[homeId][cam_id]["name"] == camera:
                         return self.cameras[homeId][cam_id]
