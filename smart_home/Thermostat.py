@@ -102,6 +102,16 @@ class HomeData:
                 LOG.debug(self.default_home)
                 if "therm_schedules" in self.homes[key]:
                     return self.homes[key]["id"]
+    
+    def getHomeName(self, home_id=None):
+        if home_id is None:
+            home_id = self.default_home_id
+        for key, value in self.homes.items():
+            if value["id"] == home_id:
+                LOG.debug(self.homes[key]["id"])
+                LOG.debug(self.default_home)
+                if "therm_schedules" in self.homes[key]:
+                    return self.homes[key]["name"]
 
     def getSelectedschedule(self, home=None, home_id=None):
         if not home_id:
@@ -256,10 +266,13 @@ class HomeStatus(HomeData):
         data = self.home_data.getSelectedschedule(home_id=home_id)
         return data["away_temp"]
 
-    def getHgtemp(self, home=None):
-        if not home:
-            home = self.home_data.default_home
-        data = self.home_data.getSelectedschedule(home=home)
+    def getHgtemp(self, home=None, home_id=None):
+        if not home_id:
+            if not home:
+                home = self.home_data.default_home
+                LOG.debug(self.home_data.default_home)
+            home_id = self.home_data.gethomeId(home)
+        data = self.home_data.getSelectedschedule(home_id=home_id)
         return data["hg_temp"]
 
     def measuredTemperature(self, rid=None):
@@ -287,9 +300,10 @@ class HomeStatus(HomeData):
             boiler_status = relay_status["boiler_status"]
         return boiler_status
 
-    def thermostatType(self, home, rid):
+    def thermostatType(self, home, rid, home_id=None):
         module_id = None
-        home_id = self.home_data.gethomeId(home=home)
+        if home_id is None:
+            home_id = self.home_data.gethomeId(home=home)
         for key in self.home_data.rooms[home_id]:
             if key == rid:
                 for module_id in self.home_data.rooms[home_id][rid]["module_ids"]:

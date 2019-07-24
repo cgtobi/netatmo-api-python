@@ -89,24 +89,30 @@ def test_HomeData_no_home_name(auth, requests_mock):
         json=json_fixture,
         headers={"content-type": "application/json"},
     )
-    # with pytest.raises(smart_home.PublicData.NoDevice):
     homeData = smart_home.Thermostat.HomeData(auth)
     home_id = "91763b24c43d3e344f424e8b"
-    print(homeData.homeById(home_id))
     assert homeData.homeById(home_id)["name"] == "Unknown"
 
 
 def test_HomeData_homeById(homeData):
     home_id = "91763b24c43d3e344f424e8b"
     assert homeData.homeById(home_id)["name"] == "MYHOME"
+    home_id = "91763b24c43d3e344f424e8c"
+    assert homeData.homeById(home_id)["name"] == "Unknown"
 
 
 def test_HomeData_homeByName(homeData):
     assert homeData.homeByName()["name"] == "MYHOME"
+    assert homeData.homeByName()["id"] == "91763b24c43d3e344f424e8b"
 
 
 def test_HomeData_gethomeId(homeData):
     assert homeData.gethomeId() == "91763b24c43d3e344f424e8b"
+    assert homeData.gethomeId("MYHOME") == "91763b24c43d3e344f424e8b"
+
+
+def test_HomeData_getHomeName(homeData):
+    assert homeData.getHomeName() == "MYHOME"
 
 
 def test_HomeData_getSelectedschedule(homeData):
