@@ -10,6 +10,9 @@ from .conftest import does_not_raise
 import smart_home.Camera
 
 
+INVALID_NAME = "InvalidName"
+
+
 def test_CameraData(cameraHomeData):
     assert cameraHomeData.default_home == "MYHOME"
     assert cameraHomeData.default_camera["id"] == "12:34:56:00:f1:62"
@@ -38,7 +41,7 @@ def test_CameraData_homeById(cameraHomeData, hid, expected):
         (None, "91763b24c43d3e344f424e8b"),
         ("", "91763b24c43d3e344f424e8b"),
         pytest.param(
-            "InvalidName",
+            INVALID_NAME,
             None,
             marks=pytest.mark.xfail(reason="Invalid home name not handled yet"),
         ),
@@ -75,22 +78,23 @@ def test_CameraData_cameraById(cameraHomeData, cid, expected):
         (None, "MYHOME", "12:34:56:00:f1:62"),
         ("", "MYHOME", "12:34:56:00:f1:62"),
         ("Garden", "MYHOME", "12:34:56:00:a5:a4"),
-        pytest.param(
-            "InvalidName",
-            None,
-            None,
-            marks=pytest.mark.xfail(reason="Invalid home name not handled yet"),
-        ),
-        pytest.param(
-            None,
-            "InvalidName",
-            None,
-            marks=pytest.mark.xfail(reason="Invalid home name not handled yet"),
-        ),
+        pytest.param(INVALID_NAME, None, None),
+        pytest.param(None, INVALID_NAME, None),
     ],
 )
 def test_CameraData_cameraByName(cameraHomeData, name, home, expected):
-    assert cameraHomeData.cameraByName(name, home)["id"] == expected
+    if home == INVALID_NAME or name == INVALID_NAME:
+        assert cameraHomeData.cameraByName(name, home) is None
+    else:
+        assert cameraHomeData.cameraByName(name, home)["id"] == expected
+
+
+def test_CameraData_moduleById(cameraHomeData):
+    assert cameraHomeData.moduleById("00:00:00:00:00:00") is None
+
+
+def test_CameraData_moduleByName(cameraHomeData):
+    assert cameraHomeData.moduleByName() is None
 
 
 @pytest.mark.parametrize(
@@ -103,10 +107,10 @@ def test_CameraData_cameraByName(cameraHomeData, name, home, expected):
         (None, "MYHOME", "12:34:56:00:f1:62", "NACamera"),
         (None, None, "12:34:56:00:f1:62", "NACamera"),
         ("Garden", None, None, "NOC"),
-        ("InvalidName", None, None, None),
+        (INVALID_NAME, None, None, None),
         pytest.param(
             None,
-            "InvalidName",
+            INVALID_NAME,
             None,
             "NACamera",
             marks=pytest.mark.xfail(reason="Invalid home name not handled yet"),

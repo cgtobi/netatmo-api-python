@@ -1,6 +1,7 @@
 import logging
 
-from . import _BASE_URL, NoDevice, postRequest
+from . import _BASE_URL, postRequest
+from .Exceptions import NoDevice, NoSchedule, InvalidHome, InvalidRoom
 
 LOG = logging.getLogger(__name__)
 
@@ -10,18 +11,6 @@ _SETTHERMMODE_REQ = _BASE_URL + "api/setthermmode"
 _SETROOMTHERMPOINT_REQ = _BASE_URL + "api/setroomthermpoint"
 _GETROOMMEASURE_REQ = _BASE_URL + "api/getroommeasure"
 _SWITCHHOMESCHEDULE_REQ = _BASE_URL + "api/switchhomeschedule"
-
-
-class NoSchedule(Exception):
-    pass
-
-
-class InvalidHome(Exception):
-    pass
-
-
-class InvalidRoom(Exception):
-    pass
 
 
 class HomeData:
@@ -100,6 +89,7 @@ class HomeData:
         for key, value in self.homes.items():
             if value["name"] == home:
                 return self.homes[key]
+        raise InvalidHome("Invalid Home %s" % home)
 
     def gethomeId(self, home=None):
         if not home:

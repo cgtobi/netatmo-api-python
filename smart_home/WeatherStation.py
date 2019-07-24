@@ -1,7 +1,8 @@
 import logging
 import time
 
-from . import _BASE_URL, NoDevice, postRequest, todayStamps
+from . import _BASE_URL, postRequest, todayStamps
+from .Exceptions import NoDevice
 
 LOG = logging.getLogger(__name__)
 

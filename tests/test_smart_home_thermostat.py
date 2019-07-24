@@ -7,6 +7,7 @@ import pytest
 from .conftest import does_not_raise
 
 import smart_home.Thermostat
+import smart_home.Exceptions
 
 
 def test_HomeData(homeData):
@@ -124,22 +125,22 @@ def test_HomeData_getHomeName(homeData):
 def test_HomeData_getSelectedschedule(homeData):
     assert homeData.getSelectedschedule()["name"] == "Default"
     assert homeData.getSelectedschedule("MYHOME")["name"] == "Default"
-    with pytest.raises(smart_home.Thermostat.InvalidHome):
+    with pytest.raises(smart_home.Exceptions.InvalidHome):
         assert homeData.getSelectedschedule("Unknown")
 
 
 @pytest.mark.parametrize(
     "t_home, t_sched_id, t_sched, expected",
     [
-        (None, None, None, pytest.raises(smart_home.Thermostat.NoSchedule)),
+        (None, None, None, pytest.raises(smart_home.Exceptions.NoSchedule)),
         (None, None, "Default", does_not_raise()),
         (None, "591b54a2764ff4d50d8b5795", None, does_not_raise()),
-        (None, None, "Summer", pytest.raises(smart_home.Thermostat.NoSchedule)),
+        (None, None, "Summer", pytest.raises(smart_home.Exceptions.NoSchedule)),
         (
             None,
             "123456789abcdefg12345678",
             None,
-            pytest.raises(smart_home.Thermostat.NoSchedule),
+            pytest.raises(smart_home.Exceptions.NoSchedule),
         ),
     ],
 )
@@ -221,7 +222,7 @@ def test_HomeStatus_error(auth, requests_mock):
         json=json_fixture,
         headers={"content-type": "application/json"},
     )
-    with pytest.raises(smart_home.Thermostat.NoDevice):
+    with pytest.raises(smart_home.Exceptions.NoDevice):
         assert smart_home.Thermostat.HomeStatus(auth)
 
 
@@ -236,7 +237,7 @@ def test_HomeStatus_roomById(homeStatus):
         "therm_setpoint_end_time": 0,
     }
     assert homeStatus.roomById("2746182631") == expexted
-    with pytest.raises(smart_home.Thermostat.InvalidRoom):
+    with pytest.raises(smart_home.Exceptions.InvalidRoom):
         assert homeStatus.roomById("0000000000")
 
 
@@ -255,7 +256,7 @@ def test_HomeStatus_thermostatById(homeStatus):
         "battery_state": "high",
     }
     assert homeStatus.thermostatById("12:34:56:00:01:ae") == expexted
-    with pytest.raises(smart_home.Thermostat.InvalidRoom):
+    with pytest.raises(smart_home.Exceptions.InvalidRoom):
         assert homeStatus.thermostatById("00:00:00:00:00:00")
 
 
@@ -268,7 +269,7 @@ def test_HomeStatus_relayById(homeStatus):
         "wifi_strength": 42,
     }
     assert homeStatus.relayById("12:34:56:00:fa:d0") == expexted
-    with pytest.raises(smart_home.Thermostat.InvalidRoom):
+    with pytest.raises(smart_home.Exceptions.InvalidRoom):
         assert homeStatus.relayById("00:00:00:00:00:00")
 
 
@@ -284,14 +285,14 @@ def test_HomeStatus_valveById(homeStatus):
         "battery_state": "full",
     }
     assert homeStatus.valveById("12:34:56:03:a5:54") == expexted
-    with pytest.raises(smart_home.Thermostat.InvalidRoom):
+    with pytest.raises(smart_home.Exceptions.InvalidRoom):
         assert homeStatus.valveById("00:00:00:00:00:00")
 
 
 def test_HomeStatus_setPoint(homeStatus):
     assert homeStatus.setPoint() == 12
     assert homeStatus.setPoint("2746182631") == 12
-    with pytest.raises(smart_home.Thermostat.InvalidRoom):
+    with pytest.raises(smart_home.Exceptions.InvalidRoom):
         assert homeStatus.setPoint("0000000000")
 
 
@@ -312,7 +313,7 @@ def test_HomeStatus_getAwaytemp(homeStatus):
 def test_HomeStatus_getHgtemp(homeStatus):
     assert homeStatus.getHgtemp() == 7
     assert homeStatus.getHgtemp("MYHOME") == 7
-    with pytest.raises(smart_home.Thermostat.InvalidHome):
+    with pytest.raises(smart_home.Exceptions.InvalidHome):
         assert homeStatus.getHgtemp("InvalidHome")
     assert homeStatus.getHgtemp(home_id="91763b24c43d3e344f424e8b") == 7
     assert homeStatus.getHgtemp(home_id="00000000000000000000000") is None
@@ -321,7 +322,7 @@ def test_HomeStatus_getHgtemp(homeStatus):
 def test_HomeStatus_measuredTemperature(homeStatus):
     assert homeStatus.measuredTemperature() == 19.8
     assert homeStatus.measuredTemperature("2746182631") == 19.8
-    with pytest.raises(smart_home.Thermostat.InvalidRoom):
+    with pytest.raises(smart_home.Exceptions.InvalidRoom):
         assert homeStatus.measuredTemperature("0000000000")
 
 
@@ -332,7 +333,7 @@ def test_HomeStatus_boilerStatus(homeStatus):
 def test_HomeStatus_thermostatType(homeStatus):
     assert homeStatus.thermostatType("MYHOME", "2746182631") == "NATherm1"
     assert homeStatus.thermostatType("MYHOME", "2833524037") == "NRV"
-    with pytest.raises(smart_home.Thermostat.InvalidHome):
+    with pytest.raises(smart_home.Exceptions.InvalidHome):
         assert homeStatus.thermostatType("InvalidHome", "2833524037")
     assert homeStatus.thermostatType("MYHOME", "0000000000") is None
 
