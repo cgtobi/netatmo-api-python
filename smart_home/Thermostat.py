@@ -16,6 +16,14 @@ class NoSchedule(Exception):
     pass
 
 
+class InvalidHome(Exception):
+    pass
+
+
+class InvalidRoom(Exception):
+    pass
+
+
 class HomeData:
     """
     List the Energy devices (relays, thermostat modules and valves)
@@ -102,23 +110,27 @@ class HomeData:
                 LOG.debug(self.default_home)
                 if "therm_schedules" in self.homes[key]:
                     return self.homes[key]["id"]
-    
+        raise InvalidHome("Invalid Home %s" % home)
+
     def getHomeName(self, home_id=None):
         if home_id is None:
             home_id = self.default_home_id
         for key, value in self.homes.items():
             if value["id"] == home_id:
-                LOG.debug(self.homes[key]["id"])
-                LOG.debug(self.default_home)
-                if "therm_schedules" in self.homes[key]:
-                    return self.homes[key]["name"]
+                return self.homes[key]["name"]
+        raise InvalidHome("Invalid Home ID %s" % home_id)
 
     def getSelectedschedule(self, home=None, home_id=None):
         if not home_id:
             if not home:
                 home = self.default_home
             home_id = self.gethomeId(home=home)
-        self.schedule = self.schedules[home_id]
+
+        try:
+            self.schedule = self.schedules[home_id]
+        except KeyError:
+            raise NoSchedule("No schedules available for %s" % home_id)
+
         for key in self.schedule.keys():
             if "selected" in self.schedule[key].keys():
                 return self.schedule[key]
@@ -209,6 +221,7 @@ class HomeStatus(HomeData):
         for key, value in self.rooms.items():
             if value["id"] == rid:
                 return self.rooms[key]
+        raise InvalidRoom("No room with ID %s" % rid)
 
     def thermostatById(self, rid):
         if not rid:
@@ -216,6 +229,7 @@ class HomeStatus(HomeData):
         for key, value in self.thermostats.items():
             if value["id"] == rid:
                 return self.thermostats[key]
+        raise InvalidRoom("No room with ID %s" % rid)
 
     def relayById(self, rid):
         if not rid:
@@ -223,6 +237,7 @@ class HomeStatus(HomeData):
         for key, value in self.relays.items():
             if value["id"] == rid:
                 return self.relays[key]
+        raise InvalidRoom("No room with ID %s" % rid)
 
     def valveById(self, rid):
         if not rid:
@@ -230,16 +245,14 @@ class HomeStatus(HomeData):
         for key, value in self.valves.items():
             if value["id"] == rid:
                 return self.valves[key]
+        raise InvalidRoom("No room with ID %s" % rid)
 
     def setPoint(self, rid=None):
         """
         Return the setpoint of a given room.
         """
         setpoint = None
-        if rid:
-            room_data = self.roomById(rid=rid)
-        else:
-            room_data = self.roomById(rid=None)
+        room_data = self.roomById(rid=rid)
         if room_data:
             setpoint = room_data["therm_setpoint_temperature"]
         return setpoint
@@ -249,10 +262,11 @@ class HomeStatus(HomeData):
         Return the setpointmode of a given room.
         """
         setpointmode = None
-        if rid:
+        try:
             room_data = self.roomById(rid=rid)
-        else:
-            room_data = self.roomById(rid=None)
+        except InvalidRoom:
+            LOG.debug("Invalid room %s", rid)
+            room_data = None
         if room_data:
             setpointmode = room_data["therm_setpoint_mode"]
         return setpointmode
@@ -262,8 +276,16 @@ class HomeStatus(HomeData):
             if not home:
                 home = self.home_data.default_home
                 LOG.debug(self.home_data.default_home)
-            home_id = self.home_data.gethomeId(home)
-        data = self.home_data.getSelectedschedule(home_id=home_id)
+            try:
+                home_id = self.home_data.gethomeId(home)
+            except InvalidHome:
+                LOG.debug("No Schedule for Home ID %s", home_id)
+                return None
+        try:
+            data = self.home_data.getSelectedschedule(home_id=home_id)
+        except NoSchedule:
+            LOG.debug("No Schedule for Home ID %s", home_id)
+            return None
         return data["away_temp"]
 
     def getHgtemp(self, home=None, home_id=None):
@@ -272,7 +294,11 @@ class HomeStatus(HomeData):
                 home = self.home_data.default_home
                 LOG.debug(self.home_data.default_home)
             home_id = self.home_data.gethomeId(home)
-        data = self.home_data.getSelectedschedule(home_id=home_id)
+        try:
+            data = self.home_data.getSelectedschedule(home_id=home_id)
+        except NoSchedule:
+            LOG.debug("No Schedule for Home ID %s", home_id)
+            return None
         return data["hg_temp"]
 
     def measuredTemperature(self, rid=None):
@@ -281,10 +307,7 @@ class HomeStatus(HomeData):
         """
         temperature = None
         LOG.debug(rid)
-        if rid:
-            room_data = self.roomById(rid=rid)
-        else:
-            room_data = self.roomById(rid=None)
+        room_data = self.roomById(rid=rid)
         if room_data:
             temperature = room_data["therm_measured_temperature"]
         return temperature
