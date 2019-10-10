@@ -16,7 +16,7 @@ _GETEVENTSUNTIL_REQ = _BASE_URL + "api/geteventsuntil"
 class CameraData:
     """
     List the Netatmo cameras informations
-        (Homes, cameras, modules, events, persons)
+        (Homes, cameras, smoke detectors, modules, events, persons)
     Args:
         authData (ClientAuth):
             Authentication information with a working access Token
@@ -27,17 +27,19 @@ class CameraData:
         postParams = {"access_token": self.getAuthToken, "size": size}
         resp = postRequest(_GETHOMEDATA_REQ, postParams)
         if resp is None:
-            raise URLError("No camera data returned by Netatmo server")
+            raise URLError("No device data returned by Netatmo server")
         self.rawData = resp["body"].get("homes")
         if not self.rawData:
-            raise NoDevice("No camera data available")
+            raise NoDevice("No device data available")
         self.homes = {d["id"]: d for d in self.rawData}
         if not self.homes:
-            raise NoDevice("No camera available")
+            raise NoDevice("No devices available")
         self.persons = {}
         self.events = {}
         self.outdoor_events = {}
+        self.devices = {}
         self.cameras = {}
+        self.smokedetectors = {}
         self.modules = {}
         self.lastEvent = {}
         self.outdoor_lastEvent = {}
@@ -45,6 +47,7 @@ class CameraData:
         self.default_home = None
         self.default_home_id = None
         self.default_camera = None
+        self.default_smokedetector = None
         for item in self.rawData:
             homeId = item.get("id")
             nameHome = item.get("name")
@@ -56,13 +59,16 @@ class CameraData:
                 continue
             if homeId not in self.cameras:
                 self.cameras[homeId] = {}
+            if homeId not in self.smokedetectors:
+                self.smokedetectors[homeId] = {}
             if homeId not in self.types:
                 self.types[homeId] = {}
             for p in item["persons"]:
                 self.persons[p["id"]] = p
             if "events" in item:
-                self.default_home = item["name"]
-                self.default_home_id = item["id"]
+                if not self.default_home and not self.default_home_id:
+                    self.default_home = item["name"]
+                    self.default_home_id = item["id"]
                 for e in item["events"]:
                     if e["type"] == "outdoor":
                         if e["camera_id"] not in self.outdoor_events:
@@ -78,7 +84,11 @@ class CameraData:
                     for m in c["modules"]:
                         self.modules[m["id"]] = m
                         self.modules[m["id"]]["cam_id"] = c["id"]
+            for s in item["smokedetectors"]:
+                self.smokedetectors[homeId][s["id"]] = s
             for t in item["cameras"]:
+                self.types[homeId][t["type"]] = t
+            for t in item["smokedetectors"]:
                 self.types[homeId][t["type"]] = t
         for camera in self.events:
             self.lastEvent[camera] = self.events[camera][

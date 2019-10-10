@@ -45,6 +45,7 @@ class ClientAuth:
             read_presence: to retrieve Presence data (Gethomedata, Getcamerapicture)
             read_homecoach: to retrieve Home Coache data (Gethomecoachsdata)
             access_presence: to access the live stream, any video stored on the SD card and to retrieve Presence's lightflood status
+            read_smokedetector: to read the smoke detector status (Gethomedata)
             Several value can be used at the same time, ie: 'read_station read_camera'
     """
 
@@ -132,7 +133,11 @@ if __name__ == "__main__":
         clientSecret=CLIENT_SECRET,
         username=USERNAME,
         password=PASSWORD,
-        scope="read_station read_camera access_camera read_thermostat write_thermostat read_presence access_presence",
+        scope=(
+            "read_station read_camera access_camera read_thermostat "
+            "write_thermostat read_presence access_presence read_homecoach "
+            "read_smokedetector"
+        ),
     )
 
     try:
