@@ -190,6 +190,41 @@ class CameraData:
                 return self.modules[key]
         return None
 
+    def smokedetectorById(self, sid):
+        for home, sd in self.smokedetectors.items():
+            if sid in self.smokedetectors[home]:
+                return self.smokedetectors[home][sid]
+        return None
+
+    def smokedetectorByName(self, smokedetector=None, home=None, home_id=None):
+        if home_id is None:
+            if home is None:
+                hid = self.default_home_id
+            else:
+                try:
+                    hid = self.homeByName(home)["id"]
+                except InvalidHome:
+                    LOG.debug("Invalid home %s", home)
+                    return None
+        else:
+            hid = home_id
+        if smokedetector is None and home is None and home_id is None:
+            return self.default_smokedetector
+        elif not (home_id or home) and smokedetector:
+            for h_id, cam_ids in self.smokedetectors.items():
+                for cam_id in cam_ids:
+                    if self.smokedetectors[h_id][cam_id]["name"] == smokedetector:
+                        return self.smokedetectors[h_id][cam_id]
+        elif hid and smokedetector:
+            hid = self.homeByName(home)["id"]
+            if hid not in self.smokedetectors:
+                return None
+            for cam_id in self.smokedetectors[hid]:
+                if self.smokedetectors[hid][cam_id]["name"] == smokedetector:
+                    return self.smokedetectors[hid][cam_id]
+        else:
+            return list(self.smokedetectors[hid].values())[0]
+
     def cameraType(self, camera=None, home=None, cid=None, home_id=None):
         """
         Return the type of a given camera.
@@ -274,35 +309,48 @@ class CameraData:
                     return self.getCameraPicture(image_id, key)
         return None, None
 
-    def updateEvent(self, event=None, home=None, cameratype=None, home_id=None):
+    def updateEvent(self, event=None, home=None, devicetype=None, home_id=None):
         """
         Update the list of event with the latest ones
         """
         if not home_id:
             try:
+                if not home:
+                    home = self.default_home
                 home_id = self.gethomeId(home)
             except InvalidHome:
                 LOG.debug("No valid Home %s", home)
                 return None
-        if cameratype == "NACamera":
+        if devicetype == "NACamera":
             # for the Welcome camera
             if not event:
-                # If not event is provided we need to retrieve the oldest of
+                # If no event is provided we need to retrieve the oldest of
                 # the last event seen by each camera
                 listEvent = {}
                 for cam_id in self.lastEvent:
                     listEvent[self.lastEvent[cam_id]["time"]] = self.lastEvent[cam_id]
                 event = listEvent[sorted(listEvent)[0]]
-        if cameratype == "NOC":
+        if devicetype == "NOC":
             # for the Presence camera
             if not event:
-                # If not event is provided we need to retrieve the oldest of
+                # If no event is provided we need to retrieve the oldest of
                 # the last event seen by each camera
                 listEvent = {}
                 for cam_id in self.outdoor_lastEvent:
                     listEvent[
                         self.outdoor_lastEvent[cam_id]["time"]
                     ] = self.outdoor_lastEvent[cam_id]
+                event = listEvent[sorted(listEvent)[0]]
+        if devicetype == "NSD":
+            # for the smoke detector
+            if not event:
+                # If no event is provided we need to retrieve the oldest of
+                # the last event by each smoke detector
+                listEvent = {}
+                for sid in self.outdoor_lastEvent:
+                    listEvent[
+                        self.outdoor_lastEvent[sid]["time"]
+                    ] = self.outdoor_lastEvent[sid]
                 event = listEvent[sorted(listEvent)[0]]
 
         postParams = {
