@@ -37,7 +37,7 @@ jobs:
     - name: Check with black
       run: |
         pip install black
-        black --check RMVtransport
+        black --check
     - name: Test with pytest
       run: |
         pip install pytest
