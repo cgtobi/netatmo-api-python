@@ -40,5 +40,5 @@ jobs:
         black --check smart_home/ tests/ setup.py
     - name: Test with pytest
       run: |
-        pip install pytest freezegun
+        pip install pytest freezegun requests-mock
         pytest
