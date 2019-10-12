@@ -1,0 +1,25 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+twine = "*"
+pytest = "*"
+black = "*"
+mypy = "*"
+flake8 = "*"
+pylint = "*"
+docutils = "==0.14"
+pytest-mock = "*"
+pytest-cov = "*"
+requests-mock = "*"
+freezegun = "*"
+
+[packages]
+
+[requires]
+python_version = "3.7"
+
+[pipenv]
+allow_prereleases = true
