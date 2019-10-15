@@ -37,7 +37,6 @@ class CameraData:
         self.persons = {}
         self.events = {}
         self.outdoor_events = {}
-        self.devices = {}
         self.cameras = {}
         self.smokedetectors = {}
         self.modules = {}
