@@ -2,12 +2,11 @@
 import json
 
 import pytest
-
 from freezegun import freeze_time
 
-from .conftest import does_not_raise
-
 import smart_home.WeatherStation
+
+from .conftest import does_not_raise
 
 
 def test_WeatherStationData(weatherStationData):
@@ -149,6 +148,7 @@ def test_WeatherStationData_moduleById(weatherStationData, mid, sid, expected):
                 "humidity",
                 "max_temp",
                 "min_temp",
+                "reachable",
                 "rf_status",
                 "temperature",
             ],
@@ -160,6 +160,7 @@ def test_WeatherStationData_moduleById(weatherStationData, mid, sid, expected):
                 "battery_vp",
                 "gustangle",
                 "guststrength",
+                "reachable",
                 "rf_status",
                 "windangle",
                 "windstrength",
@@ -171,6 +172,7 @@ def test_WeatherStationData_moduleById(weatherStationData, mid, sid, expected):
                 "Rain",
                 "battery_percent",
                 "battery_vp",
+                "reachable",
                 "rf_status",
                 "sum_rain_1",
                 "sum_rain_24",
@@ -185,6 +187,7 @@ def test_WeatherStationData_moduleById(weatherStationData, mid, sid, expected):
                 "min_temp",
                 "noise",
                 "pressure",
+                "reachable",
                 "temperature",
                 "wifi_status",
             ],
@@ -374,3 +377,11 @@ def test_WeatherStationData_getMeasure(
         weatherStationData.getMeasure(device_id, scale, mtype)["body"]["1544558433"]
         == expected
     )
+
+
+def test_WeatherStationData_lastData_measurements(weatherStationData):
+    mod = weatherStationData.lastData("MyStation", None)
+    assert mod["NetatmoIndoor"]["min_temp"] == 23.4
+    assert mod["NetatmoIndoor"]["max_temp"] == 25.6
+    assert mod["NetatmoIndoor"]["Temperature"] == 24.6
+    assert mod["NetatmoIndoor"]["Pressure"] == 1017.3
