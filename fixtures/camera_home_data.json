@@ -233,6 +233,17 @@
                     }
                 ],
                 "smokedetectors": []
+            },
+            {
+                "id": "91763b24c43d3e344f424e8d",
+                "persons": [],
+                "place": {
+                    "city": "Frankfurt",
+                    "country": "DE",
+                    "timezone": "Europe/Berlin"
+                },
+                "cameras": [],
+                "smokedetectors": []
             }
         ],
         "user": {
