@@ -94,7 +94,10 @@ class CameraData:
             self.default_module = list(self.modules.values())[0]["name"]
         else:
             self.default_module = None
-        if self.default_home is not None and len(self.cameras[self.default_home_id]) > 0:
+        if (
+            self.default_home is not None
+            and len(self.cameras[self.default_home_id]) > 0
+        ):
             self.default_camera = list(self.cameras[self.default_home_id].values())[0]
 
     def homeById(self, hid):
