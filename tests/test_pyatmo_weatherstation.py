@@ -318,9 +318,6 @@ def test_WeatherStationData_moduleById(weatherStationData, mid, sid, expected):
 def test_WeatherStationData_monitoredConditions(
     weatherStationData, module, moduleId, expected
 ):
-    print(
-        sorted(weatherStationData.monitoredConditions(module=module, moduleId=moduleId))
-    )
     assert (
         sorted(weatherStationData.monitoredConditions(module=module, moduleId=moduleId))
         == expected
