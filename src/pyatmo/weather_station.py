@@ -133,8 +133,12 @@ class WeatherStationData:
     def monitoredConditions(self, module=None, moduleId=None):
         if moduleId:
             mod = self.moduleById(moduleId)
+            if not mod:
+                mod = self.stationById(moduleId)
         elif module:
             mod = self.moduleByName(module)
+            if not mod:
+                mod = self.stationByName(module)
         else:
             return None
         conditions = []
@@ -149,7 +153,7 @@ class WeatherStationData:
             elif cond == "Rain":
                 conditions.extend(["Rain", "sum_rain_24", "sum_rain_1"])
             else:
-                conditions.append(cond.lower())
+                conditions.append(cond)
         if mod["type"] in ["NAMain", "NHC"]:
             # the main module has wifi_status
             conditions.append("wifi_status")
