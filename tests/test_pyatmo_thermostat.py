@@ -356,7 +356,6 @@ def test_HomeData_setThermmode(
         headers={"content-type": "application/json"},
     )
     res = homeStatus.setThermmode(home_id=home_id, mode=mode)
-    print(res)
     if "error" in res:
         assert expected in res["error"]["message"]
     else:
