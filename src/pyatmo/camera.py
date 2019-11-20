@@ -127,8 +127,6 @@ class CameraData:
             home = self.default_home
         for key, value in self.homes.items():
             if value["name"] == home:
-                LOG.debug(self.homes[key]["id"])
-                LOG.debug(self.default_home)
                 return self.homes[key]["id"]
         raise InvalidHome("Invalid Home %s" % home)
 
@@ -294,7 +292,6 @@ class CameraData:
             "person_ids[]": person_ids,
         }
         resp = postRequest(_SETPERSONSHOME_REQ, postParams)
-        LOG.debug(resp)
         return resp
 
     def setPersonsAway(self, person_id, home_id):
@@ -307,7 +304,6 @@ class CameraData:
             "person_id": person_id,
         }
         resp = postRequest(_SETPERSONSAWAY_REQ, postParams)
-        LOG.debug(resp)
         return resp
 
     def getPersonId(self, name):
@@ -351,7 +347,7 @@ class CameraData:
                     home = self.default_home
                 home_id = self.gethomeId(home)
             except InvalidHome:
-                LOG.debug("No valid Home %s", home)
+                LOG.debug("Invalid Home %s", home)
                 return None
         if devicetype == "NACamera":
             # for the Welcome camera
