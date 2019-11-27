@@ -1,4 +1,4 @@
-from .auth import ClientAuth
+from .auth import ClientAuth, NetatmOAuth2
 from .camera import CameraData
 from .exceptions import InvalidHome, InvalidRoom, NoDevice, NoSchedule
 from .home_coach import HomeCoachData
@@ -14,6 +14,7 @@ __all__ = [
     "HomeStatus",
     "InvalidHome",
     "InvalidRoom",
+    "NetatmOAuth2",
     "NoDevice",
     "NoSchedule",
     "PublicData",

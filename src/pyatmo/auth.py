@@ -1,4 +1,9 @@
 import time
+from typing import Callable, Dict, Optional, Union
+
+from oauthlib.oauth2 import TokenExpiredError
+from requests import Response
+from requests_oauthlib import OAuth2Session
 
 from .exceptions import NoDevice
 from .helpers import _BASE_URL, LOG, postRequest
@@ -47,6 +52,7 @@ class ClientAuth:
         self._clientSecret = clientSecret
         try:
             self._accessToken = resp["access_token"]
+            self.token = resp
         except KeyError:
             LOG.error("Netatmo API returned %s", resp["error"])
             raise NoDevice("Authentication against Netatmo API failed")
@@ -83,3 +89,61 @@ class ClientAuth:
             self.refreshToken = resp["refresh_token"]
             self.expiration = int(resp["expire_in"] + time.time() - 1800)
         return self._accessToken
+
+
+class NetatmOAuth2:
+    """."""
+
+    def __init__(
+        self,
+        token: Optional[Dict[str, str]] = None,
+        client_id: str = None,
+        client_secret: str = None,
+        token_updater: Optional[Callable[[str], None]] = None,
+    ):
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.token_updater = token_updater
+        self.scope = (
+            "read_station read_camera access_camera read_thermostat "
+            "write_thermostat read_presence access_presence read_homecoach "
+            "read_smokedetector"
+        )
+
+        self._oauth = OAuth2Session(
+            client_id=client_id,
+            token=token,
+            token_updater=token_updater,
+            scope=self.scope,
+        )
+
+    def refresh_tokens(self) -> Dict[str, Union[str, int]]:
+        """Refresh and return new tokens."""
+        token = self._oauth.refresh_token(f"{_AUTH_REQ}")
+
+        if self.token_updater is not None:
+            self.token_updater(token)
+
+        return token
+
+    def request(self, method: str, path: str, **kwargs) -> Response:
+        """Make a request.
+
+        We don't use the built-in token refresh mechanism of OAuth2 session because
+        we want to allow overriding the token refresh logic.
+        """
+        url = f"{_AUTH_REQ}"
+        try:
+            return getattr(self._oauth, method)(url, **kwargs)
+        except TokenExpiredError:
+            self._oauth.token = self.refresh_tokens()
+
+            return getattr(self._oauth, method)(url, **kwargs)
+
+    @property
+    def accessToken(self):
+        return self._oauth.token["access_token"]
+
+    @property
+    def token(self):
+        return self._oauth.token
