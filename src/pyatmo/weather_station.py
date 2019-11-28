@@ -20,9 +20,8 @@ class WeatherStationData:
     def __init__(self, authData, urlReq=None):
         """Initialize the weather station class."""
         self.urlReq = urlReq or _GETSTATIONDATA_REQ
-        self.getAuthToken = authData.accessToken
-        postParams = {"access_token": self.getAuthToken}
-        resp = postRequest(self.urlReq, postParams)
+        self.authData = authData
+        resp = postRequest(auth=self.authData, url=self.urlReq)
         if resp is None:
             raise NoDevice("No weather station data returned by Netatmo server")
         try:
@@ -252,8 +251,7 @@ class WeatherStationData:
         optimize=False,
         real_time=False,
     ):
-        postParams = {"access_token": self.getAuthToken}
-        postParams["device_id"] = device_id
+        postParams = {"device_id": device_id}
         if module_id:
             postParams["module_id"] = module_id
         postParams["scale"] = scale
@@ -266,7 +264,7 @@ class WeatherStationData:
             postParams["limit"] = limit
         postParams["optimize"] = "true" if optimize else "false"
         postParams["real_time"] = "true" if real_time else "false"
-        return postRequest(_GETMEASURE_REQ, postParams)
+        return postRequest(auth=self.authData, url=_GETMEASURE_REQ, params=postParams)
 
     def MinMaxTH(self, station=None, module=None, frame="last24"):
         if not station:

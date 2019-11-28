@@ -1,8 +1,9 @@
+import math
 import time
-from typing import Callable, Dict, Optional, Union
+from typing import Any, Callable, Dict, Optional, Union
 
+import requests
 from oauthlib.oauth2 import TokenExpiredError
-from requests import Response
 from requests_oauthlib import OAuth2Session
 
 from .exceptions import NoDevice
@@ -47,7 +48,7 @@ class ClientAuth:
             "password": password,
             "scope": scope,
         }
-        resp = postRequest(_AUTH_REQ, postParams)
+        resp = self.postRequest(_AUTH_REQ, postParams)
         self._clientId = clientId
         self._clientSecret = clientSecret
         try:
@@ -60,23 +61,35 @@ class ClientAuth:
         self._scope = resp["scope"]
         self.expiration = int(resp["expire_in"] + time.time() - 1800)
 
+    def postRequest(self, url, params=None, timeout=30):
+        resp = requests.post(url, data=params, timeout=timeout)
+        if not resp.ok:
+            LOG.error("The Netatmo API returned %s", resp.status_code)
+        try:
+            return (
+                resp.json()
+                if "application/json" in resp.headers.get("content-type")
+                else resp.content
+            )
+        except TypeError:
+            LOG.debug("Invalid response %s", resp)
+        return None
+
     def addwebhook(self, webhook_url):
         postParams = {
-            "access_token": self._accessToken,
             "url": webhook_url,
             "app_types": "app_security",
         }
-        resp = postRequest(_WEBHOOK_URL_ADD, postParams)
+        resp = postRequest(self, _WEBHOOK_URL_ADD, postParams)
         LOG.debug("addwebhook: %s", resp)
 
     def dropwebhook(self):
-        postParams = {"access_token": self._accessToken, "app_types": "app_security"}
-        resp = postRequest(_WEBHOOK_URL_DROP, postParams)
+        postParams = {"app_types": "app_security"}
+        resp = postRequest(self, _WEBHOOK_URL_DROP, postParams)
         LOG.debug("dropwebhook: %s", resp)
 
     @property
     def accessToken(self):
-
         if self.expiration < time.time():  # Token should be renewed
             postParams = {
                 "grant_type": "refresh_token",
@@ -101,6 +114,9 @@ class NetatmOAuth2:
         client_secret: str = None,
         token_updater: Optional[Callable[[str], None]] = None,
     ):
+        self._api_counter = 0
+        self._start_time = time.time()
+
         self.client_id = client_id
         self.client_secret = client_secret
         self.token_updater = token_updater
@@ -110,35 +126,68 @@ class NetatmOAuth2:
             "read_smokedetector"
         )
 
+        extra = {"client_id": self.client_id, "client_secret": self.client_secret}
+
         self._oauth = OAuth2Session(
             client_id=client_id,
             token=token,
             token_updater=token_updater,
+            auto_refresh_kwargs=extra,
             scope=self.scope,
         )
+
+        LOG.debug("Access token: %s", self._oauth.token)
 
     def refresh_tokens(self) -> Dict[str, Union[str, int]]:
         """Refresh and return new tokens."""
         token = self._oauth.refresh_token(f"{_AUTH_REQ}")
+
+        LOG.error("pyatmo NetatmOAuth2 refresh_tokens %s", token)
 
         if self.token_updater is not None:
             self.token_updater(token)
 
         return token
 
-    def request(self, method: str, path: str, **kwargs) -> Response:
+    def _request(self, method: str, url: str, **kwargs: Any) -> requests.Response:
         """Make a request.
-
         We don't use the built-in token refresh mechanism of OAuth2 session because
         we want to allow overriding the token refresh logic.
         """
-        url = f"{_AUTH_REQ}"
         try:
             return getattr(self._oauth, method)(url, **kwargs)
         except TokenExpiredError:
             self._oauth.token = self.refresh_tokens()
 
             return getattr(self._oauth, method)(url, **kwargs)
+
+    def postRequest(self, url, params=None, timeout=30):
+        self._api_counter += 1
+        calls_per_minute = math.ceil(
+            (self._api_counter / math.ceil((time.time() - self._start_time) / 60))
+        )
+        LOG.debug(
+            "pyatmo NetatmOAuth2 postRequest COUNT=%s (%s/min.) [%s]",
+            self._api_counter,
+            calls_per_minute,
+            url,
+        )
+
+        resp = self._request(method="post", url=url, data=params, timeout=timeout)
+        # resp = requests.post(url, data=params, timeout=timeout)
+
+        if not resp.ok:
+            LOG.error("The Netatmo API returned %s", resp.status_code)
+            LOG.debug("Netato API error: %s", resp)
+        try:
+            return (
+                resp.json()
+                if "application/json" in resp.headers.get("content-type")
+                else resp.content
+            )
+        except TypeError:
+            LOG.debug("Invalid response %s", resp)
+        return None
 
     @property
     def accessToken(self):

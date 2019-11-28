@@ -22,9 +22,9 @@ class CameraData:
     """
 
     def __init__(self, authData, size=15):
-        self.getAuthToken = authData.accessToken
-        postParams = {"access_token": self.getAuthToken, "size": size}
-        resp = postRequest(_GETHOMEDATA_REQ, postParams)
+        self.authData = authData
+        postParams = {"size": size}
+        resp = postRequest(auth=self.authData, url=_GETHOMEDATA_REQ, params=postParams)
         if resp is None:
             raise URLError("No device data returned by Netatmo server")
         self.rawData = resp["body"].get("homes")
@@ -251,13 +251,17 @@ class CameraData:
             vpn_url = camera_data.get("vpn_url")
             if camera_data.get("is_local"):
                 try:
-                    resp = postRequest("{0}/command/ping".format(vpn_url), {})
+                    resp = postRequest(
+                        auth=self.authData, url=f"{vpn_url}/command/ping"
+                    )
                     temp_local_url = resp["local_url"]
                 except URLError:
                     return None, None
 
                 try:
-                    resp = postRequest("{0}/command/ping".format(temp_local_url), {})
+                    resp = postRequest(
+                        auth=self.authData, url=f"{temp_local_url}/command/ping"
+                    )
                     if temp_local_url == resp["local_url"]:
                         local_url = temp_local_url
                 except URLError:
@@ -287,11 +291,12 @@ class CameraData:
         Mark persons as home.
         """
         postParams = {
-            "access_token": self.getAuthToken,
             "home_id": home_id,
             "person_ids[]": person_ids,
         }
-        resp = postRequest(_SETPERSONSHOME_REQ, postParams)
+        resp = postRequest(
+            auth=self.authData, url=_SETPERSONSHOME_REQ, params=postParams
+        )
         return resp
 
     def setPersonsAway(self, person_id, home_id):
@@ -299,11 +304,12 @@ class CameraData:
         Mark a person as away or set the whole home to being empty.
         """
         postParams = {
-            "access_token": self.getAuthToken,
             "home_id": home_id,
             "person_id": person_id,
         }
-        resp = postRequest(_SETPERSONSAWAY_REQ, postParams)
+        resp = postRequest(
+            auth=self.authData, url=_SETPERSONSAWAY_REQ, params=postParams
+        )
         return resp
 
     def getPersonId(self, name):
@@ -317,11 +323,12 @@ class CameraData:
         Download a specific image (of an event or user face) from the camera
         """
         postParams = {
-            "access_token": self.getAuthToken,
             "image_id": image_id,
             "key": key,
         }
-        resp = postRequest(_GETCAMERAPICTURE_REQ, postParams)
+        resp = postRequest(
+            auth=self.authData, url=_GETCAMERAPICTURE_REQ, params=postParams
+        )
         image_type = imghdr.what("NONE.FILE", resp)
         return resp, image_type
 
@@ -382,11 +389,12 @@ class CameraData:
                 event = listEvent[sorted(listEvent)[0]]
 
         postParams = {
-            "access_token": self.getAuthToken,
             "home_id": home_id,
             "event_id": event["id"],
         }
-        resp = postRequest(_GETEVENTSUNTIL_REQ, postParams)
+        resp = postRequest(
+            auth=self.authData, url=_GETEVENTSUNTIL_REQ, params=postParams
+        )
         eventList = resp["body"]["events_list"]
         for e in eventList:
             if e["type"] == "outdoor":

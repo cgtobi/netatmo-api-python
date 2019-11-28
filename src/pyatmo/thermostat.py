@@ -22,9 +22,8 @@ class HomeData:
     """
 
     def __init__(self, authData):
-        self.getAuthToken = authData.accessToken
-        postParams = {"access_token": self.getAuthToken}
-        resp = postRequest(_GETHOMESDATA_REQ, postParams)
+        self.authData = authData
+        resp = postRequest(auth=self.authData, url=_GETHOMESDATA_REQ)
         if resp is None:
             raise NoDevice("No thermostat data returned by Netatmo server")
         self.rawData = resp["body"].get("homes")
@@ -142,30 +141,35 @@ class HomeData:
         else:
             raise NoSchedule("No schedule specified")
         postParams = {
-            "access_token": self.getAuthToken,
             "home_id": home_id,
             "schedule_id": schedule_id,
         }
-        resp = postRequest(_SWITCHHOMESCHEDULE_REQ, postParams)
+        resp = postRequest(
+            auth=self.authData, url=_SWITCHHOMESCHEDULE_REQ, params=postParams
+        )
         LOG.debug("Response: %s", resp)
 
 
 class HomeStatus:
     def __init__(self, authData, home_id=None, home=None):
-        self.getAuthToken = authData.accessToken
+        self.authData = authData
         self.home_data = HomeData(authData)
 
         if home_id is not None:
             self.home_id = home_id
-            LOG.debug("home_id: %s", self.home_id)
         elif home is not None:
             self.home_id = self.home_data.gethomeId(home=home)
         else:
             self.home_id = self.home_data.gethomeId(home=self.home_data.default_home)
-        postParams = {"access_token": self.getAuthToken, "home_id": self.home_id}
+        postParams = {
+            "home_id": self.home_id,
+        }
 
-        resp = postRequest(_GETHOMESTATUS_REQ, postParams)
+        resp = postRequest(
+            auth=self.authData, url=_GETHOMESTATUS_REQ, params=postParams
+        )
         if "errors" in resp or "body" not in resp or "home" not in resp["body"]:
+            LOG.debug("Errors in response: %s", resp)
             raise NoDevice("No device found, errors in response")
         self.rawData = resp["body"]["home"]
         self.rooms = {}
@@ -317,19 +321,19 @@ class HomeStatus:
 
     def setThermmode(self, home_id, mode):
         postParams = {
-            "access_token": self.getAuthToken,
             "home_id": home_id,
             "mode": mode,
         }
-        return postRequest(_SETTHERMMODE_REQ, postParams)
+        return postRequest(auth=self.authData, url=_SETTHERMMODE_REQ, params=postParams)
 
     def setroomThermpoint(self, home_id, room_id, mode, temp=None):
         postParams = {
-            "access_token": self.getAuthToken,
             "home_id": home_id,
             "room_id": room_id,
             "mode": mode,
         }
         if temp is not None:
             postParams["temp"] = temp
-        return postRequest(_SETROOMTHERMPOINT_REQ, postParams)
+        return postRequest(
+            auth=self.authData, url=_SETROOMTHERMPOINT_REQ, params=postParams
+        )
