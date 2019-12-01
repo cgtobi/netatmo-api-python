@@ -1,6 +1,6 @@
 import math
 import time
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 import requests
 from oauthlib.oauth2 import TokenExpiredError
@@ -11,6 +11,7 @@ from .helpers import _BASE_URL, LOG, postRequest
 
 # Common definitions
 _AUTH_REQ = _BASE_URL + "oauth2/token"
+_AUTH_URL = _BASE_URL + "oauth2/authorize"
 _WEBHOOK_URL_ADD = _BASE_URL + "api/addwebhook"
 _WEBHOOK_URL_DROP = _BASE_URL + "api/dropwebhook"
 
@@ -109,9 +110,10 @@ class NetatmOAuth2:
 
     def __init__(
         self,
-        token: Optional[Dict[str, str]] = None,
         client_id: str = None,
         client_secret: str = None,
+        redirect_uri: Optional[str] = None,
+        token: Optional[Dict[str, str]] = None,
         token_updater: Optional[Callable[[str], None]] = None,
     ):
         self._api_counter = 0
@@ -119,19 +121,30 @@ class NetatmOAuth2:
 
         self.client_id = client_id
         self.client_secret = client_secret
+        self.redirect_uri = redirect_uri
         self.token_updater = token_updater
-        self.scope = (
-            "read_station read_camera access_camera read_thermostat "
-            "write_thermostat read_presence access_presence read_homecoach "
-            "read_smokedetector"
+        self.scope = " ".join(
+            [
+                "read_station",
+                "read_camera",
+                "access_camera",
+                "write_camera",
+                "read_presence",
+                "access_presence",
+                "read_homecoach",
+                "read_smokedetector",
+                "read_thermostat",
+                "write_thermostat",
+            ]
         )
 
         extra = {"client_id": self.client_id, "client_secret": self.client_secret}
 
         self._oauth = OAuth2Session(
-            client_id=client_id,
+            client_id=self.client_id,
             token=token,
-            token_updater=token_updater,
+            token_updater=self.token_updater,
+            redirect_uri=self.redirect_uri,
             auto_refresh_kwargs=extra,
             scope=self.scope,
         )
@@ -161,7 +174,7 @@ class NetatmOAuth2:
 
             return getattr(self._oauth, method)(url, **kwargs)
 
-    def postRequest(self, url, params=None, timeout=30):
+    def postRequest(self, url, params={}, timeout=30):
         self._api_counter += 1
         calls_per_minute = math.ceil(
             (self._api_counter / math.ceil((time.time() - self._start_time) / 60))
@@ -172,6 +185,9 @@ class NetatmOAuth2:
             calls_per_minute,
             url,
         )
+
+        # params["access_token"] = self._oauth.access_token
+        print("postRequest params:", params)
 
         resp = self._request(method="post", url=url, data=params, timeout=timeout)
         # resp = requests.post(url, data=params, timeout=timeout)
@@ -196,3 +212,22 @@ class NetatmOAuth2:
     @property
     def token(self):
         return self._oauth.token
+
+    def get_authorization_url(self, state: Optional[str] = None) -> Tuple[str, str]:
+        return self._oauth.authorization_url(_AUTH_URL, state)
+
+    def request_token(
+        self, authorization_response: Optional[str] = None, code: Optional[str] = None
+    ) -> Dict[str, str]:
+        """Generic method for fetching a Netatmo access token.
+        :param authorization_response: Authorization response URL, the callback
+                                       URL of the request back to you.
+        :param code: Authorization code
+        :return: A token dict
+        """
+        return self._oauth.fetch_token(
+            _AUTH_REQ,
+            authorization_response=authorization_response,
+            code=code,
+            client_secret=self.client_secret,
+        )

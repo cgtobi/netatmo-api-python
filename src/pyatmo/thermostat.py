@@ -169,7 +169,7 @@ class HomeStatus:
             auth=self.authData, url=_GETHOMESTATUS_REQ, params=postParams
         )
         if "errors" in resp or "body" not in resp or "home" not in resp["body"]:
-            LOG.debug("Errors in response: %s", resp)
+            LOG.error("Errors in response: %s", resp)
             raise NoDevice("No device found, errors in response")
         self.rawData = resp["body"]["home"]
         self.rooms = {}

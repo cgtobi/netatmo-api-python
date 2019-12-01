@@ -11,7 +11,10 @@ _BASE_URL = "https://api.netatmo.com/"
 def postRequest(auth, url, params={}, timeout=30):
     postParams = {"access_token": auth.accessToken}
     postParams.update(params)
-    return auth.postRequest(url=url, params=postParams, timeout=timeout)
+    resp = auth.postRequest(url=url, params=postParams, timeout=timeout)
+    if "errors" in resp or "body" not in resp or "home" not in resp["body"]:
+        LOG.debug("Errors in response: %s", resp)
+    return resp
 
 
 def toTimeString(value):
