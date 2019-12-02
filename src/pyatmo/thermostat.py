@@ -161,9 +161,7 @@ class HomeStatus:
             self.home_id = self.home_data.gethomeId(home=home)
         else:
             self.home_id = self.home_data.gethomeId(home=self.home_data.default_home)
-        postParams = {
-            "home_id": self.home_id,
-        }
+        postParams = {"home_id": self.home_id}
 
         resp = postRequest(
             auth=self.authData, url=_GETHOMESTATUS_REQ, params=postParams

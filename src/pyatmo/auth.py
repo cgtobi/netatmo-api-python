@@ -16,6 +16,21 @@ _WEBHOOK_URL_ADD = _BASE_URL + "api/addwebhook"
 _WEBHOOK_URL_DROP = _BASE_URL + "api/dropwebhook"
 
 
+# Possible scops
+ALL_SCOPES = [
+    "read_station",  # to retrieve weather station data (Getstationsdata, Getmeasure)
+    "read_camera",  # to retrieve Welcome data (Gethomedata, Getcamerapicture)
+    "access_camera",  # to access the camera, the videos and the live stream
+    "write_camera",  # to set home/away status of persons (Setpersonsaway, Setpersonshome)
+    "read_presence",  # to retrieve Presence data (Gethomedata, Getcamerapicture)
+    "access_presence",  # to access the live stream, any video stored on the SD card and to retrieve Presence's lightflood status
+    "read_homecoach",  # to retrieve Home Coache data (Gethomecoachsdata)
+    "read_smokedetector",  # to retrieve the smoke detector status (Gethomedata)
+    "read_thermostat",  # to retrieve thermostat data (Getmeasure, Getthermostatsdata)
+    "write_thermostat",  # to set up the thermostat (Syncschedule, Setthermpoint)
+]
+
+
 class ClientAuth:
     """
     Request authentication and keep access token available through token method. Renew it automatically if necessary
@@ -27,14 +42,14 @@ class ClientAuth:
         scope (Optional[str]):
             read_station: to retrieve weather station data (Getstationsdata, Getmeasure)
             read_camera: to retrieve Welcome data (Gethomedata, Getcamerapicture)
-            access_camera: to access the camera, the videos and the live stream.
+            access_camera: to access the camera, the videos and the live stream
             write_camera: to set home/away status of persons (Setpersonsaway, Setpersonshome)
             read_thermostat: to retrieve thermostat data (Getmeasure, Getthermostatsdata)
             write_thermostat: to set up the thermostat (Syncschedule, Setthermpoint)
             read_presence: to retrieve Presence data (Gethomedata, Getcamerapicture)
             access_presence: to access the live stream, any video stored on the SD card and to retrieve Presence's lightflood status
             read_homecoach: to retrieve Home Coache data (Gethomecoachsdata)
-            read_smokedetector: to read the smoke detector status (Gethomedata)
+            read_smokedetector: to retrieve the smoke detector status (Gethomedata)
             Several value can be used at the same time, ie: 'read_station read_camera'
     """
 
@@ -123,20 +138,7 @@ class NetatmOAuth2:
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
         self.token_updater = token_updater
-        self.scope = " ".join(
-            [
-                "read_station",
-                "read_camera",
-                "access_camera",
-                "write_camera",
-                "read_presence",
-                "access_presence",
-                "read_homecoach",
-                "read_smokedetector",
-                "read_thermostat",
-                "write_thermostat",
-            ]
-        )
+        self.scope = " ".join(ALL_SCOPES)
 
         extra = {"client_id": self.client_id, "client_secret": self.client_secret}
 
@@ -154,8 +156,6 @@ class NetatmOAuth2:
     def refresh_tokens(self) -> Dict[str, Union[str, int]]:
         """Refresh and return new tokens."""
         token = self._oauth.refresh_token(f"{_AUTH_REQ}")
-
-        LOG.error("pyatmo NetatmOAuth2 refresh_tokens %s", token)
 
         if self.token_updater is not None:
             self.token_updater(token)
@@ -186,11 +186,7 @@ class NetatmOAuth2:
             url,
         )
 
-        # params["access_token"] = self._oauth.access_token
-        print("postRequest params:", params)
-
         resp = self._request(method="post", url=url, data=params, timeout=timeout)
-        # resp = requests.post(url, data=params, timeout=timeout)
 
         if not resp.ok:
             LOG.error("The Netatmo API returned %s", resp.status_code)
