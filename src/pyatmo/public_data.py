@@ -1,5 +1,5 @@
 from .exceptions import NoDevice
-from .helpers import _BASE_URL, postRequest, toTimeString
+from .helpers import _BASE_URL, toTimeString
 
 _GETPUBLIC_DATA = _BASE_URL + "api/getpublicdata"
 _LON_NE = 6.221652
@@ -45,7 +45,7 @@ class PublicData:
         if required_data_type:
             postParams["required_data"] = required_data_type
 
-        resp = postRequest(auth=self.authData, url=_GETPUBLIC_DATA, params=postParams)
+        resp = self.authData.postRequest(url=_GETPUBLIC_DATA, params=postParams)
         try:
             self.raw_data = resp["body"]
         except (KeyError, TypeError):

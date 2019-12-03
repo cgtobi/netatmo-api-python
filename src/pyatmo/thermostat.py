@@ -1,7 +1,7 @@
 import logging
 
 from .exceptions import InvalidHome, InvalidRoom, NoDevice, NoSchedule
-from .helpers import _BASE_URL, postRequest
+from .helpers import _BASE_URL
 
 LOG = logging.getLogger(__name__)
 
@@ -23,8 +23,8 @@ class HomeData:
 
     def __init__(self, authData):
         self.authData = authData
-        resp = postRequest(auth=self.authData, url=_GETHOMESDATA_REQ)
-        if resp is None:
+        resp = self.authData.postRequest(url=_GETHOMESDATA_REQ)
+        if resp is None or "body" not in resp:
             raise NoDevice("No thermostat data returned by Netatmo server")
         self.rawData = resp["body"].get("homes")
         if not self.rawData:
@@ -144,9 +144,7 @@ class HomeData:
             "home_id": home_id,
             "schedule_id": schedule_id,
         }
-        resp = postRequest(
-            auth=self.authData, url=_SWITCHHOMESCHEDULE_REQ, params=postParams
-        )
+        resp = self.authData.postRequest(url=_SWITCHHOMESCHEDULE_REQ, params=postParams)
         LOG.debug("Response: %s", resp)
 
 
@@ -163,9 +161,7 @@ class HomeStatus:
             self.home_id = self.home_data.gethomeId(home=self.home_data.default_home)
         postParams = {"home_id": self.home_id}
 
-        resp = postRequest(
-            auth=self.authData, url=_GETHOMESTATUS_REQ, params=postParams
-        )
+        resp = self.authData.postRequest(url=_GETHOMESTATUS_REQ, params=postParams)
         if "errors" in resp or "body" not in resp or "home" not in resp["body"]:
             LOG.error("Errors in response: %s", resp)
             raise NoDevice("No device found, errors in response")
@@ -322,7 +318,7 @@ class HomeStatus:
             "home_id": home_id,
             "mode": mode,
         }
-        return postRequest(auth=self.authData, url=_SETTHERMMODE_REQ, params=postParams)
+        return self.authData.postRequest(url=_SETTHERMMODE_REQ, params=postParams)
 
     def setroomThermpoint(self, home_id, room_id, mode, temp=None):
         postParams = {
@@ -332,6 +328,4 @@ class HomeStatus:
         }
         if temp is not None:
             postParams["temp"] = temp
-        return postRequest(
-            auth=self.authData, url=_SETROOMTHERMPOINT_REQ, params=postParams
-        )
+        return self.authData.postRequest(url=_SETROOMTHERMPOINT_REQ, params=postParams)

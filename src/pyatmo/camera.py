@@ -3,7 +3,7 @@ import time
 from urllib.error import URLError
 
 from .exceptions import InvalidHome, NoDevice
-from .helpers import _BASE_URL, LOG, postRequest
+from .helpers import _BASE_URL, LOG
 
 _GETHOMEDATA_REQ = _BASE_URL + "api/gethomedata"
 _GETCAMERAPICTURE_REQ = _BASE_URL + "api/getcamerapicture"
@@ -24,9 +24,9 @@ class CameraData:
     def __init__(self, authData, size=15):
         self.authData = authData
         postParams = {"size": size}
-        resp = postRequest(auth=self.authData, url=_GETHOMEDATA_REQ, params=postParams)
-        if resp is None:
-            raise URLError("No device data returned by Netatmo server")
+        resp = self.authData.postRequest(url=_GETHOMEDATA_REQ, params=postParams)
+        if resp is None or "body" not in resp:
+            raise NoDevice("No device data returned by Netatmo server")
         self.rawData = resp["body"].get("homes")
         if not self.rawData:
             raise NoDevice("No device data available")
@@ -251,18 +251,16 @@ class CameraData:
             vpn_url = camera_data.get("vpn_url")
             if camera_data.get("is_local"):
                 try:
-                    resp = postRequest(
-                        auth=self.authData, url=f"{vpn_url}/command/ping"
-                    )
+                    resp = self.authData.postRequest(url=f"{vpn_url}/command/ping")
                     temp_local_url = resp["local_url"]
                 except URLError:
                     return None, None
 
                 try:
-                    resp = postRequest(
-                        auth=self.authData, url=f"{temp_local_url}/command/ping"
+                    resp = self.authData.postRequest(
+                        url=f"{temp_local_url}/command/ping"
                     )
-                    if temp_local_url == resp["local_url"]:
+                    if temp_local_url == resp.get("local_url"):
                         local_url = temp_local_url
                 except URLError:
                     pass
@@ -294,9 +292,7 @@ class CameraData:
             "home_id": home_id,
             "person_ids[]": person_ids,
         }
-        resp = postRequest(
-            auth=self.authData, url=_SETPERSONSHOME_REQ, params=postParams
-        )
+        resp = self.authData.postRequest(url=_SETPERSONSHOME_REQ, params=postParams)
         return resp
 
     def setPersonsAway(self, person_id, home_id):
@@ -307,9 +303,7 @@ class CameraData:
             "home_id": home_id,
             "person_id": person_id,
         }
-        resp = postRequest(
-            auth=self.authData, url=_SETPERSONSAWAY_REQ, params=postParams
-        )
+        resp = self.authData.postRequest(url=_SETPERSONSAWAY_REQ, params=postParams)
         return resp
 
     def getPersonId(self, name):
@@ -326,9 +320,7 @@ class CameraData:
             "image_id": image_id,
             "key": key,
         }
-        resp = postRequest(
-            auth=self.authData, url=_GETCAMERAPICTURE_REQ, params=postParams
-        )
+        resp = self.authData.postRequest(url=_GETCAMERAPICTURE_REQ, params=postParams)
         image_type = imghdr.what("NONE.FILE", resp)
         return resp, image_type
 
@@ -392,9 +384,7 @@ class CameraData:
             "home_id": home_id,
             "event_id": event["id"],
         }
-        resp = postRequest(
-            auth=self.authData, url=_GETEVENTSUNTIL_REQ, params=postParams
-        )
+        resp = self.authData.postRequest(url=_GETEVENTSUNTIL_REQ, params=postParams)
         eventList = resp["body"]["events_list"]
         for e in eventList:
             if e["type"] == "outdoor":

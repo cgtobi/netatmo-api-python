@@ -9,7 +9,7 @@ import pyatmo
 
 
 def test_ClientAuth(auth):
-    assert auth.accessToken == (
+    assert auth.token["access_token"] == (
         "91763b24c43d3e344f424e8b|880b55a08c758e87ff8755a00c6b8a12"
     )
 
