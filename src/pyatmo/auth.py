@@ -1,10 +1,14 @@
 import logging
 import math
 import time
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from typing import Callable, Dict, Optional, Tuple, Union
 
 import requests
-from oauthlib.oauth2 import LegacyApplicationClient, TokenExpiredError
+from oauthlib.oauth2 import (
+    InvalidClientError,
+    LegacyApplicationClient,
+    TokenExpiredError,
+)
 from requests_oauthlib import OAuth2Session
 
 from .helpers import _BASE_URL
@@ -45,21 +49,6 @@ class NetatmOAuth2:
         token_updater: Optional[Callable[[str], None]] = None,
         scope: str = "read_station",
     ):
-        # LOG.error(
-        #     "NetatmOAuth2 init args:\n"
-        #     "  client id: %s\n"
-        #     "  client secret: %s\n"
-        #     "  redirekt url: %s\n"
-        #     "  token: %s\n"
-        #     "  token_updater: %s\n"
-        #     "  scope: %s",
-        #     client_id,
-        #     client_secret,
-        #     redirect_uri,
-        #     token,
-        #     token_updater,
-        #     scope,
-        # )
         self._api_counter = 0
         self._start_time = time.time()
 
@@ -72,7 +61,6 @@ class NetatmOAuth2:
         self.extra = {
             "client_id": self.client_id,
             "client_secret": self.client_secret,
-            # "scope": self.scope,
         }
 
         self._oauth = OAuth2Session(
@@ -88,7 +76,7 @@ class NetatmOAuth2:
     def refresh_tokens(self) -> Dict[str, Union[str, int]]:
         """Refresh and return new tokens."""
         LOG.debug("Refreshing token")
-        token = self._oauth.refresh_token(f"{_AUTH_REQ}")
+        token = self._oauth.refresh_token(f"{_AUTH_REQ}", include_client_id=True)
 
         LOG.debug("refreshed token %s", token)
         print(f"refreshed token {token}")
@@ -97,19 +85,6 @@ class NetatmOAuth2:
             self.token_updater(token)
 
         return token
-
-    def _request(self, method: str, url: str, **kwargs: Any) -> requests.Response:
-        """Make a request.
-        We don't use the built-in token refresh mechanism of OAuth2 session because
-        we want to allow overriding the token refresh logic.
-        """
-        try:
-            return getattr(self._oauth, method)(url, **kwargs)
-        except TokenExpiredError:
-            LOG.debug("Token expired!")
-            self._oauth.token = self.refresh_tokens()
-
-            return getattr(self._oauth, method)(url, **kwargs)
 
     def postRequest(self, url, params={}, timeout=30):
         self._api_counter += 1
@@ -123,11 +98,15 @@ class NetatmOAuth2:
             url,
         )
 
-        print(url)
+        print(url, self._oauth.token["expires_at"])
         if "http://" in url:
             resp = requests.post(url, data=params, timeout=timeout)
         else:
-            resp = self._request(method="post", url=url, data=params, timeout=timeout)
+            try:
+                resp = self._oauth.post(url=url, data=params, timeout=timeout)
+            except (InvalidClientError, TokenExpiredError):
+                self.refresh_tokens()
+                resp = self._oauth.post(url=url, data=params, timeout=timeout)
 
         if not resp.ok:
             LOG.error("The Netatmo API returned %s", resp.status_code)
@@ -141,10 +120,6 @@ class NetatmOAuth2:
         except TypeError:
             LOG.debug("Invalid response %s", resp)
         return None
-
-    @property
-    def token(self) -> dict:
-        return self._oauth.token
 
     def get_authorization_url(self, state: Optional[str] = None) -> Tuple[str, str]:
         return self._oauth.authorization_url(_AUTH_URL, state)
