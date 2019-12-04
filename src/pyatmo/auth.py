@@ -80,7 +80,7 @@ class NetatmOAuth2:
             token=token,
             token_updater=self.token_updater,
             redirect_uri=self.redirect_uri,
-            # auto_refresh_kwargs=self.extra,
+            auto_refresh_kwargs=self.extra,
             auto_refresh_url=_AUTH_REQ,
             scope=self.scope,
         )
@@ -88,7 +88,7 @@ class NetatmOAuth2:
     def refresh_tokens(self) -> Dict[str, Union[str, int]]:
         """Refresh and return new tokens."""
         LOG.debug("Refreshing token")
-        token = self._oauth.refresh_token(f"{_AUTH_REQ}", **self.extra)
+        token = self._oauth.refresh_token(f"{_AUTH_REQ}")
 
         LOG.debug("refreshed token %s", token)
         print(f"refreshed token {token}")
