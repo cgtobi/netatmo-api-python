@@ -45,7 +45,7 @@ class PublicData:
         if required_data_type:
             postParams["required_data"] = required_data_type
 
-        resp = self.authData.postRequest(url=_GETPUBLIC_DATA, params=postParams)
+        resp = self.authData.post_request(url=_GETPUBLIC_DATA, params=postParams)
         try:
             self.raw_data = resp["body"]
         except (KeyError, TypeError):

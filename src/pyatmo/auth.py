@@ -1,5 +1,4 @@
 import logging
-import math
 import time
 from typing import Callable, Dict, Optional, Tuple, Union
 
@@ -82,17 +81,10 @@ class NetatmOAuth2:
 
         return token
 
-    def postRequest(self, url, params={}, timeout=30):
-        self._api_counter += 1
-        calls_per_minute = math.ceil(
-            (self._api_counter / math.ceil((time.time() - self._start_time) / 60))
-        )
-        LOG.debug(
-            "pyatmo NetatmOAuth2 postRequest COUNT=%s (%s/min.) [%s]",
-            self._api_counter,
-            calls_per_minute,
-            url,
-        )
+    def post_request(self, url, params={}, timeout=30):
+        """Wrapper for post requests."""
+        if not params:
+            params = {}
 
         print(url, self._oauth.token["expires_at"])
         if "http://" in url:
@@ -103,6 +95,7 @@ class NetatmOAuth2:
         if not resp.ok:
             LOG.error("The Netatmo API returned %s", resp.status_code)
             LOG.debug("Netato API error: %s", resp.content)
+
         try:
             return (
                 resp.json()
@@ -138,14 +131,14 @@ class NetatmOAuth2:
         postParams = {
             "url": webhook_url,
         }
-        resp = self.postRequest(_WEBHOOK_URL_ADD, postParams)
+        resp = self.post_request(_WEBHOOK_URL_ADD, postParams)
         print(resp)
         LOG.debug("addwebhook: %s", resp)
 
     def dropwebhook(self):
         print(_WEBHOOK_URL_ADD)
         postParams = {"app_types": "app_security"}
-        resp = self.postRequest(_WEBHOOK_URL_DROP, postParams)
+        resp = self.post_request(_WEBHOOK_URL_DROP, postParams)
         print(resp)
         LOG.debug("dropwebhook: %s", resp)
 
