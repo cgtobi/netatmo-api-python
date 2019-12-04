@@ -4,11 +4,7 @@ import time
 from typing import Callable, Dict, Optional, Tuple, Union
 
 import requests
-from oauthlib.oauth2 import (
-    InvalidClientError,
-    LegacyApplicationClient,
-    TokenExpiredError,
-)
+from oauthlib.oauth2 import LegacyApplicationClient
 from requests_oauthlib import OAuth2Session
 
 from .helpers import _BASE_URL
@@ -102,11 +98,7 @@ class NetatmOAuth2:
         if "http://" in url:
             resp = requests.post(url, data=params, timeout=timeout)
         else:
-            try:
-                resp = self._oauth.post(url=url, data=params, timeout=timeout)
-            except (InvalidClientError, TokenExpiredError):
-                self.refresh_tokens()
-                resp = self._oauth.post(url=url, data=params, timeout=timeout)
+            resp = self._oauth.post(url=url, data=params, timeout=timeout)
 
         if not resp.ok:
             LOG.error("The Netatmo API returned %s", resp.status_code)
