@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Callable, Dict, Optional, Tuple, Union
+from typing import Callable, Dict, Optional, Tuple
 
 import requests
 from oauthlib.oauth2 import LegacyApplicationClient
@@ -68,20 +68,7 @@ class NetatmOAuth2:
             scope=self.scope,
         )
 
-    def refresh_tokens(self) -> Dict[str, Union[str, int]]:
-        """Refresh and return new tokens."""
-        LOG.debug("Refreshing token")
-        token = self._oauth.refresh_token(f"{_AUTH_REQ}", include_client_id=True)
-
-        LOG.debug("refreshed token %s", token)
-        print(f"refreshed token {token}")
-
-        if self.token_updater is not None:
-            self.token_updater(token)
-
-        return token
-
-    def post_request(self, url, params={}, timeout=30):
+    def post_request(self, url, params=None, timeout=30):
         """Wrapper for post requests."""
         if not params:
             params = {}
@@ -123,6 +110,8 @@ class NetatmOAuth2:
             authorization_response=authorization_response,
             code=code,
             client_secret=self.client_secret,
+            include_client_id=True,
+            # auth=False,
         )
 
     def addwebhook(self, webhook_url):
