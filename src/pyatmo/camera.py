@@ -407,26 +407,33 @@ class CameraData:
     def personSeenByCamera(self, name, home=None, camera=None, exclude=0):
         """
         Evaluate if a specific person has been seen
+        (old interface)
         """
         try:
-            cam_id = self.cameraByName(camera=camera, home=home)["id"]
+            cid = self.cameraByName(camera=camera, home=home)["id"]
         except TypeError:
             LOG.error("personSeenByCamera: Camera name or home is unknown")
             return False
+        return self.person_seen_by_camera(name=name, cid=cid, exclude=exclude)
+
+    def person_seen_by_camera(self, name, cid, exclude=0):
+        """
+        Evaluate if a specific person has been seen
+        """
         # Check in the last event is someone known has been seen
         if exclude:
             limit = time.time() - exclude
-            array_time_event = sorted(self.events[cam_id], reverse=True)
+            array_time_event = sorted(self.events[cid], reverse=True)
             for time_ev in array_time_event:
                 if time_ev < limit:
                     return False
-                if self.events[cam_id][time_ev]["type"] == "person":
-                    person_id = self.events[cam_id][time_ev]["person_id"]
+                if self.events[cid][time_ev]["type"] == "person":
+                    person_id = self.events[cid][time_ev]["person_id"]
                     if "pseudo" in self.persons[person_id]:
                         if self.persons[person_id]["pseudo"] == name:
                             return True
-        elif self.lastEvent[cam_id]["type"] == "person":
-            person_id = self.lastEvent[cam_id]["person_id"]
+        elif self.lastEvent[cid]["type"] == "person":
+            person_id = self.lastEvent[cid]["person_id"]
             if "pseudo" in self.persons[person_id]:
                 if self.persons[person_id]["pseudo"] == name:
                     return True
@@ -451,6 +458,7 @@ class CameraData:
     def someoneKnownSeen(self, home=None, camera=None, exclude=0, cid=None):
         """
         Evaluate if someone known has been seen
+        (old interface)
         """
         if not cid:
             try:
@@ -458,7 +466,12 @@ class CameraData:
             except TypeError:
                 LOG.error("someoneKnownSeen: Camera name or home is unknown")
                 return False
+        return self.someone_known_seen(cid=cid, exclude=exclude)
 
+    def someone_known_seen(self, cid, exclude=0):
+        """
+        Evaluate if someone known has been seen
+        """
         if exclude:
             limit = time.time() - exclude
             array_time_event = sorted(self.events[cid], reverse=True)
@@ -477,6 +490,7 @@ class CameraData:
     def someoneUnknownSeen(self, home=None, camera=None, exclude=0, cid=None):
         """
         Evaluate if someone unknown has been seen
+        (old interface)
         """
         if not cid:
             try:
@@ -484,7 +498,9 @@ class CameraData:
             except TypeError:
                 LOG.error("someoneUnknownSeen: Camera name or home is unknown")
                 return False
+        return self.someone_unknown_seen(cid=cid, exclude=exclude)
 
+    def someone_unknown_seen(self, cid, exclude=0):
         if exclude:
             limit = time.time() - exclude
             array_time_event = sorted(self.events[cid], reverse=True)
@@ -506,6 +522,7 @@ class CameraData:
     def motionDetected(self, home=None, camera=None, exclude=0, cid=None):
         """
         Evaluate if movement has been detected
+        (old interface)
         """
         if not cid:
             try:
@@ -513,7 +530,12 @@ class CameraData:
             except TypeError:
                 LOG.error("motionDetected: Camera name or home is unknown")
                 return False
+        return self.motion_detected(cid=cid, exclude=exclude)
 
+    def motion_detected(self, cid, exclude=0):
+        """
+        Evaluate if movement has been detected
+        """
         if exclude:
             limit = time.time() - exclude
             array_time_event = sorted(self.events[cid], reverse=True)
@@ -529,6 +551,7 @@ class CameraData:
     def outdoormotionDetected(self, home=None, camera=None, offset=0, cid=None):
         """
         Evaluate if outdoor movement has been detected
+        (old interface)
         """
         if not cid:
             try:
@@ -536,7 +559,12 @@ class CameraData:
             except TypeError:
                 LOG.error("outdoormotionDetected: Camera name or home is unknown")
                 return False
+        return self.outdoor_motion_detected(cid=cid, offset=0)
 
+    def outdoor_motion_detected(self, cid, offset=0):
+        """
+        Evaluate if outdoor movement has been detected
+        """
         if cid in self.lastEvent:
             if self.lastEvent[cid]["type"] == "movement":
                 if self.lastEvent[cid][
@@ -550,6 +578,7 @@ class CameraData:
     def humanDetected(self, home=None, camera=None, offset=0, cid=None):
         """
         Evaluate if a human has been detected
+        (old interface)
         """
         if not cid:
             try:
@@ -557,7 +586,12 @@ class CameraData:
             except TypeError:
                 LOG.error("personSeenByCamera: Camera name or home is unknown")
                 return False
+        return self.human_detected(cid=cid, offset=0)
 
+    def human_detected(self, cid, offset=0):
+        """
+        Evaluate if a human has been detected
+        """
         if self.outdoor_lastEvent[cid]["video_status"] == "recording":
             for e in self.outdoor_lastEvent[cid]["event_list"]:
                 if e["type"] == "human" and e["time"] + offset > int(time.time()):
@@ -567,6 +601,7 @@ class CameraData:
     def animalDetected(self, home=None, camera=None, offset=0, cid=None):
         """
         Evaluate if an animal has been detected
+        (old interface)
         """
         if not cid:
             try:
@@ -574,7 +609,12 @@ class CameraData:
             except TypeError:
                 LOG.error("animalDetected: Camera name or home is unknown")
                 return False
+        return self.animal_detected(cid=cid, offset=0)
 
+    def animal_detected(self, cid, offset=0):
+        """
+        Evaluate if an animal has been detected
+        """
         if self.outdoor_lastEvent[cid]["video_status"] == "recording":
             for e in self.outdoor_lastEvent[cid]["event_list"]:
                 if e["type"] == "animal" and e["time"] + offset > int(time.time()):
@@ -584,6 +624,7 @@ class CameraData:
     def carDetected(self, home=None, camera=None, offset=0, cid=None):
         """
         Evaluate if a car has been detected
+        (old interface)
         """
         if not cid:
             try:
@@ -591,7 +632,12 @@ class CameraData:
             except TypeError:
                 LOG.error("carDetected: Camera name or home is unknown")
                 return False
+        return self.car_detected(cid=cid, offset=offset)
 
+    def car_detected(self, cid, offset=0):
+        """
+        Evaluate if a car has been detected
+        """
         if self.outdoor_lastEvent[cid]["video_status"] == "recording":
             for e in self.outdoor_lastEvent[cid]["event_list"]:
                 if e["type"] == "vehicle" and e["time"] + offset > int(time.time()):
@@ -601,32 +647,38 @@ class CameraData:
     def moduleMotionDetected(self, module=None, home=None, camera=None, exclude=0):
         """
         Evaluate if movement has been detected
+        (old interface)
         """
         try:
             mod = self.moduleByName(module, camera=camera, home=home)
-            mod_id = mod["id"]
-            cam_id = mod["cam_id"]
+            mid = mod["id"]
+            cid = mod["cam_id"]
         except TypeError:
             LOG.error(
                 "moduleMotionDetected: Module name or" "Camera name or home is unknown"
             )
             return False
+        return self.module_motion_detected(mid=mid, cid=cid, exclude=exclude)
 
+    def module_motion_detected(self, mid, cid, exclude=0):
+        """
+        Evaluate if movement has been detected
+        """
         if exclude:
             limit = time.time() - exclude
-            array_time_event = sorted(self.events[cam_id], reverse=True)
+            array_time_event = sorted(self.events[cid], reverse=True)
             for time_ev in array_time_event:
                 if time_ev < limit:
                     return False
                 if (
-                    self.events[cam_id][time_ev]["type"] == "tag_big_move"
-                    or self.events[cam_id][time_ev]["type"] == "tag_small_move"
-                ) and self.events[cam_id][time_ev]["module_id"] == mod_id:
+                    self.events[cid][time_ev]["type"] == "tag_big_move"
+                    or self.events[cid][time_ev]["type"] == "tag_small_move"
+                ) and self.events[cid][time_ev]["module_id"] == mid:
                     return True
         elif (
-            self.lastEvent[cam_id]["type"] == "tag_big_move"
-            or self.lastEvent[cam_id]["type"] == "tag_small_move"
-        ) and self.lastEvent[cam_id]["module_id"] == mod_id:
+            self.lastEvent[cid]["type"] == "tag_big_move"
+            or self.lastEvent[cid]["type"] == "tag_small_move"
+        ) and self.lastEvent[cid]["module_id"] == mid:
             return True
         return False
 
@@ -636,26 +688,28 @@ class CameraData:
         """
         try:
             mod = self.moduleByName(module, camera=camera, home=home)
-            mod_id = mod["id"]
-            cam_id = mod["cam_id"]
+            mid = mod["id"]
+            cid = mod["cam_id"]
         except TypeError:
             LOG.error("moduleOpened: Camera name, or home, or module is unknown")
             return False
+        return self.module_opened(mid=mid, cid=cid, exclude=exclude)
 
+    def module_opened(self, mid, cid, exclude=0):
         if exclude:
             limit = time.time() - exclude
-            array_time_event = sorted(self.events[cam_id], reverse=True)
+            array_time_event = sorted(self.events[cid], reverse=True)
             for time_ev in array_time_event:
                 if time_ev < limit:
                     return False
                 if (
-                    self.events[cam_id][time_ev]["type"] == "tag_open"
-                    and self.events[cam_id][time_ev]["module_id"] == mod_id
+                    self.events[cid][time_ev]["type"] == "tag_open"
+                    and self.events[cid][time_ev]["module_id"] == mid
                 ):
                     return True
         elif (
-            self.lastEvent[cam_id]["type"] == "tag_open"
-            and self.lastEvent[cam_id]["module_id"] == mod_id
+            self.lastEvent[cid]["type"] == "tag_open"
+            and self.lastEvent[cid]["module_id"] == mid
         ):
             return True
         return False
