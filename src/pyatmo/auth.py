@@ -1,5 +1,4 @@
 import logging
-import time
 from typing import Callable, Dict, Optional, Tuple, Union
 
 import requests
@@ -33,7 +32,27 @@ ALL_SCOPES = [
 
 
 class NetatmOAuth2:
-    """Implementation of of the oauth ."""
+    """
+    Handle authentication with Oauth2
+
+    :param client_id: Application client ID delivered by Netatmo on dev.netatmo.com
+    :param client_secret: Application client secret delivered by Netatmo on dev.netatmo.com
+    :param redirect_uri: Redirect URI where to the authorization server will redirect with an authorization code
+    :param token: Authorization token
+    :param token_updater: Callback when the token is updated
+    :param scope:
+        read_station: to retrieve weather station data (Getstationsdata, Getmeasure)
+        read_camera: to retrieve Welcome data (Gethomedata, Getcamerapicture)
+        access_camera: to access the camera, the videos and the live stream
+        write_camera: to set home/away status of persons (Setpersonsaway, Setpersonshome)
+        read_thermostat: to retrieve thermostat data (Getmeasure, Getthermostatsdata)
+        write_thermostat: to set up the thermostat (Syncschedule, Setthermpoint)
+        read_presence: to retrieve Presence data (Gethomedata, Getcamerapicture)
+        access_presence: to access the live stream, any video stored on the SD card and to retrieve Presence's lightflood status
+        read_homecoach: to retrieve Home Coache data (Gethomecoachsdata)
+        read_smokedetector: to retrieve the smoke detector status (Gethomedata)
+        Several value can be used at the same time, ie: 'read_station read_camera'
+    """
 
     def __init__(
         self,
@@ -42,11 +61,8 @@ class NetatmOAuth2:
         redirect_uri: Optional[str] = None,
         token: Optional[Dict[str, str]] = None,
         token_updater: Optional[Callable[[str], None]] = None,
-        scope: str = "read_station",
+        scope: Optional[str] = "read_station",
     ):
-        self._api_counter = 0
-        self._start_time = time.time()
-
         self.client_id = client_id
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
@@ -109,7 +125,8 @@ class NetatmOAuth2:
     def request_token(
         self, authorization_response: Optional[str] = None, code: Optional[str] = None
     ) -> Dict[str, str]:
-        """Generic method for fetching a Netatmo access token.
+        """
+        Generic method for fetching a Netatmo access token.
         :param authorization_response: Authorization response URL, the callback
                                        URL of the request back to you.
         :param code: Authorization code
