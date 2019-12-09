@@ -4,6 +4,7 @@ import time
 
 import pytest
 import requests
+import oauthlib
 
 import pyatmo
 
@@ -11,6 +12,9 @@ import pyatmo
 def test_ClientAuth(auth):
     assert auth._oauth.token["access_token"] == (
         "91763b24c43d3e344f424e8b|880b55a08c758e87ff8755a00c6b8a12"
+    )
+    assert auth._oauth.token["refresh_token"] == (
+        "91763b24c43d3e344f424e8b|87ff8755a00c6b8a120b55a08c758e93"
     )
 
 
@@ -22,7 +26,7 @@ def test_ClientAuth_invalid(requests_mock):
         json=json_fixture,
         headers={"content-type": "application/json"},
     )
-    with pytest.raises(pyatmo.exceptions.NoDevice):
+    with pytest.raises(oauthlib.oauth2.rfc6749.errors.InvalidGrantError):
         pyatmo.ClientAuth(
             clientId="CLIENT_ID",
             clientSecret="CLIENT_SECRET",
@@ -31,41 +35,41 @@ def test_ClientAuth_invalid(requests_mock):
         )
 
 
-def test_postRequest_json(requests_mock):
+def test_postRequest_json(auth, requests_mock):
     """Test wrapper for posting requests against the Netatmo API."""
     requests_mock.post(
-        pyatmo.helpers._BASE_URL,
+        pyatmo.auth._BASE_URL,
         json={"a": "b"},
         headers={"content-type": "application/json"},
     )
-    resp = pyatmo.helpers.postRequest(pyatmo.helpers._BASE_URL, None)
+    resp = auth.post_request(pyatmo.auth._BASE_URL, None)
     assert resp == {"a": "b"}
 
 
-def test_postRequest_binary(requests_mock):
+def test_postRequest_binary(auth, requests_mock):
     """Test wrapper for posting requests against the Netatmo API."""
     requests_mock.post(
         pyatmo.helpers._BASE_URL,
         text="Success",
         headers={"content-type": "application/text"},
     )
-    resp = pyatmo.helpers.postRequest(pyatmo.helpers._BASE_URL, None)
+    resp = auth.post_request(pyatmo.helpers._BASE_URL, None)
     assert resp == b"Success"
 
 
 @pytest.mark.parametrize("test_input,expected", [(200, None), (404, None)])
-def test_postRequest_fail(requests_mock, test_input, expected):
+def test_postRequest_fail(auth, requests_mock, test_input, expected):
     """Test failing requests against the Netatmo API."""
     requests_mock.post(pyatmo.helpers._BASE_URL, status_code=test_input)
-    resp = pyatmo.helpers.postRequest(pyatmo.helpers._BASE_URL, None)
+    resp = auth.post_request(pyatmo.helpers._BASE_URL, None)
     assert resp is expected
 
 
-def test_postRequest_timeout(requests_mock):
+def test_postRequest_timeout(auth, requests_mock):
     """Test failing requests against the Netatmo API with timeouts."""
     requests_mock.post(pyatmo.helpers._BASE_URL, exc=requests.exceptions.ConnectTimeout)
     with pytest.raises(requests.exceptions.ConnectTimeout):
-        assert pyatmo.helpers.postRequest(pyatmo.helpers._BASE_URL, None)
+        assert auth.post_request(pyatmo.helpers._BASE_URL, None)
 
 
 @pytest.mark.parametrize(

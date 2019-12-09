@@ -1,9 +1,9 @@
 import logging
 import time
-from typing import Callable, Dict, Optional, Tuple
+from typing import Callable, Dict, Optional, Tuple, Union
 
 import requests
-from oauthlib.oauth2 import LegacyApplicationClient
+from oauthlib.oauth2 import LegacyApplicationClient, TokenExpiredError
 from requests_oauthlib import OAuth2Session
 
 from .helpers import _BASE_URL
@@ -63,21 +63,31 @@ class NetatmOAuth2:
             token=token,
             token_updater=self.token_updater,
             redirect_uri=self.redirect_uri,
-            auto_refresh_kwargs=self.extra,
-            auto_refresh_url=_AUTH_REQ,
             scope=self.scope,
         )
+
+    def refresh_tokens(self) -> Dict[str, Union[str, int]]:
+        """Refresh and return new tokens."""
+        token = self._oauth.refresh_token(_AUTH_REQ)
+
+        if self.token_updater is not None:
+            self.token_updater(token)
+
+        return token
 
     def post_request(self, url, params=None, timeout=30):
         """Wrapper for post requests."""
         if not params:
             params = {}
 
-        print(url, self._oauth.token["expires_at"])
         if "http://" in url:
             resp = requests.post(url, data=params, timeout=timeout)
         else:
-            resp = self._oauth.post(url=url, data=params, timeout=timeout)
+            try:
+                resp = self._oauth.post(url=url, data=params, timeout=timeout)
+            except TokenExpiredError:
+                self._oauth.token = self.refresh_tokens()
+                resp = self._oauth.post(url=url, data=params, timeout=timeout)
 
         if not resp.ok:
             LOG.error("The Netatmo API returned %s", resp.status_code)
@@ -111,24 +121,16 @@ class NetatmOAuth2:
             code=code,
             client_secret=self.client_secret,
             include_client_id=True,
-            # auth=False,
         )
 
     def addwebhook(self, webhook_url):
-        print(webhook_url)
-        print(_WEBHOOK_URL_ADD)
-        postParams = {
-            "url": webhook_url,
-        }
+        postParams = {"url": webhook_url}
         resp = self.post_request(_WEBHOOK_URL_ADD, postParams)
-        print(resp)
         LOG.debug("addwebhook: %s", resp)
 
     def dropwebhook(self):
-        print(_WEBHOOK_URL_ADD)
         postParams = {"app_types": "app_security"}
         resp = self.post_request(_WEBHOOK_URL_DROP, postParams)
-        print(resp)
         LOG.debug("dropwebhook: %s", resp)
 
 
