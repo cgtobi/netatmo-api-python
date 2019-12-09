@@ -655,7 +655,7 @@ class CameraData:
             cid = mod["cam_id"]
         except TypeError:
             LOG.error(
-                "moduleMotionDetected: Module name or" "Camera name or home is unknown"
+                "moduleMotionDetected: Module name or Camera name or home is unknown"
             )
             return False
         return self.module_motion_detected(mid=mid, cid=cid, exclude=exclude)
