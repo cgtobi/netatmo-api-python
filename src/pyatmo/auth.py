@@ -33,7 +33,7 @@ ALL_SCOPES = [
 
 class NetatmOAuth2:
     """
-    Handle authentication with Oauth2
+    Handle authentication with OAuth2
 
     :param client_id: Application client ID delivered by Netatmo on dev.netatmo.com
     :param client_secret: Application client secret delivered by Netatmo on dev.netatmo.com
@@ -91,7 +91,9 @@ class NetatmOAuth2:
 
         return token
 
-    def post_request(self, url, params=None, timeout=30):
+    def post_request(
+        self, url: str, params: Optional[Dict[str, str]] = None, timeout: int = 30
+    ):
         """Wrapper for post requests."""
         if not params:
             params = {}
