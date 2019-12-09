@@ -131,9 +131,9 @@ class CameraData:
         raise InvalidHome("Invalid Home %s" % home)
 
     def cameraById(self, cid):
-        for home, _ in self.cameras.items():
-            if cid in self.cameras[home]:
-                return self.cameras[home][cid]
+        for home_id, _ in self.cameras.items():
+            if cid in self.cameras[home_id]:
+                return self.cameras[home_id][cid]
         return None
 
     def cameraByName(self, camera=None, home=None, home_id=None):
