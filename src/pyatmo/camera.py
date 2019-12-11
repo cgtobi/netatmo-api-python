@@ -1,5 +1,6 @@
 import imghdr
 import time
+from typing import Dict, Tuple
 from urllib.error import URLError
 
 from .exceptions import InvalidHome, NoDevice
@@ -131,12 +132,18 @@ class CameraData:
         raise InvalidHome("Invalid Home %s" % home)
 
     def cameraById(self, cid):
+        """Get camera data by ID."""
+        return self.get_camera(cid)
+
+    def get_camera(self, cid: str) -> Dict[str, str]:
+        """Get camera data."""
         for home_id, _ in self.cameras.items():
             if cid in self.cameras[home_id]:
                 return self.cameras[home_id][cid]
         return None
 
     def cameraByName(self, camera=None, home=None, home_id=None):
+        """Get camera data by name."""
         if home_id is None:
             if home is None:
                 hid = self.default_home_id
@@ -233,26 +240,36 @@ class CameraData:
             cameratype = camera_data["type"]
         return cameratype
 
-    def cameraUrls(self, camera=None, home=None, cid=None, home_id=None):
+    def cameraUrls(
+        self, camera: str = None, home: str = None, cid: str = None, home_id: str = None
+    ) -> Tuple[str, str]:
+        """
+        Return the vpn_url and the local_url (if available) of a given camera
+        in order to access its live feed
+        (old interface)
+        """
+        if home_id:
+            cid = self.cameraByName(camera=camera, home_id=home_id)["id"]
+        else:
+            cid = self.cameraByName(camera=camera, home=home)["id"]
+        return self.camera_urls(cid=cid)
+
+    def camera_urls(self, cid: str = None) -> Tuple[str, str]:
         """
         Return the vpn_url and the local_url (if available) of a given camera
         in order to access its live feed
         """
         local_url = None
         vpn_url = None
-        if cid:
-            camera_data = self.cameraById(cid)
-        elif home_id:
-            camera_data = self.cameraByName(camera=camera, home_id=home_id)
-        else:
-            camera_data = self.cameraByName(camera=camera, home=home)
+
+        camera_data = self.cameraById(cid)
 
         if camera_data:
             vpn_url = camera_data.get("vpn_url")
             if camera_data.get("is_local"):
                 try:
                     resp = self.authData.post_request(url=f"{vpn_url}/command/ping")
-                    temp_local_url = resp["local_url"]
+                    temp_local_url = resp.get("local_url")
                 except URLError:
                     return None, None
 
@@ -269,13 +286,19 @@ class CameraData:
     def personsAtHome(self, home=None, home_id=None):
         """
         Return the list of known persons who are currently at home
+        (old interface)
         """
-        if home_id:
-            home_data = self.homeById(home_id)
+        if not home:
+            home_id = self.default_home_id
         else:
-            if not home:
-                home = self.default_home
-            home_data = self.homeByName(home)
+            home_id = self.homeByName(home)["id"]
+        return self.persons_at_home(home_id)
+
+    def persons_at_home(self, home_id=None):
+        """
+        Return the list of known persons who are currently at home
+        """
+        home_data = self.homeById(home_id)
         atHome = []
         for p in home_data["persons"]:
             # Only check known personshome
@@ -285,6 +308,13 @@ class CameraData:
         return atHome
 
     def setPersonsHome(self, person_ids, home_id):
+        """
+        Mark persons as home.
+        (old interface)
+        """
+        return self.set_persons_home(person_ids, home_id)
+
+    def set_persons_home(self, person_ids, home_id):
         """
         Mark persons as home.
         """
@@ -298,6 +328,19 @@ class CameraData:
     def setPersonsAway(self, person_id, home_id):
         """
         Mark a person as away or set the whole home to being empty.
+        (old interface)
+        """
+        return self.set_persons_away(person_id, home_id)
+
+    def set_persons_away(self, person_id, home_id):
+        """Mark a person as away or set the whole home to being empty.
+
+        Arguments:
+            person_id {str} -- ID of a person
+            home_id {str} -- ID of a home
+
+        Returns:
+            [type] -- [description]
         """
         postParams = {
             "home_id": home_id,
@@ -307,6 +350,21 @@ class CameraData:
         return resp
 
     def getPersonId(self, name):
+        """
+        Retrieve a persons id
+        (old interface)
+        """
+        return self.get_person_id(name)
+
+    def get_person_id(self, name):
+        """Retrieve the ID of a person
+
+        Arguments:
+            name {str} -- Name of a person
+
+        Returns:
+            str -- ID of a person
+        """
         for pid, data in self.persons.items():
             if "pseudo" in data and name == data["pseudo"]:
                 return pid
@@ -385,7 +443,10 @@ class CameraData:
             "event_id": event["id"],
         }
         resp = self.authData.post_request(url=_GETEVENTSUNTIL_REQ, params=postParams)
-        eventList = resp["body"]["events_list"]
+        try:
+            eventList = resp["body"]["events_list"]
+        except KeyError:
+            LOG.error("eventList body: %s", resp["body"])
         for e in eventList:
             if e["type"] == "outdoor":
                 if e["camera_id"] not in self.outdoor_events:
