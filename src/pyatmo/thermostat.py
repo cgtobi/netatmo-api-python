@@ -113,20 +113,24 @@ class HomeData:
             if not home:
                 home = self.default_home
             home_id = self.gethomeId(home=home)
+        return self.get_selected_schedule(home_id=home_id)
 
+    def get_selected_schedule(self, home_id: str):
+        """Get the selected schedule for a given home ID."""
         try:
-            schedule = self.schedules[home_id]
+            schedules = self.schedules[home_id]
         except KeyError:
             raise NoSchedule("No schedules available for %s" % home_id)
 
-        for key in schedule.keys():
-            if "selected" in schedule[key].keys():
-                return schedule[key]
+        for key in schedules.keys():
+            if "selected" in schedules[key].keys():
+                return schedules[key]
 
     def switchHomeSchedule(self, schedule_id=None, schedule=None, home=None):
         if home is None:
             home = self.default_home
         home_id = self.gethomeId(home=home)
+
         schedules = {
             self.schedules[home_id][s]["name"]: self.schedules[home_id][s]["id"]
             for s in self.schedules[home_id]
@@ -140,6 +144,23 @@ class HomeData:
             schedule_id = schedules[schedule]
         else:
             raise NoSchedule("No schedule specified")
+
+        return self.switch_home_schedule(schedule_id=schedule_id, home_id=home_id)
+
+    def switch_home_schedule(self, schedule_id: str, home_id: str) -> bool:
+        """."""
+        try:
+            schedules = self.schedules[home_id]
+        except KeyError:
+            raise NoSchedule("No schedules available for %s" % home_id)
+
+        schedules = {
+            self.schedules[home_id][s]["name"]: self.schedules[home_id][s]["id"]
+            for s in self.schedules[home_id]
+        }
+        if schedule_id not in list(schedules.values()):
+            raise NoSchedule("%s is not a valid schedule id" % schedule_id)
+
         postParams = {
             "home_id": home_id,
             "schedule_id": schedule_id,
