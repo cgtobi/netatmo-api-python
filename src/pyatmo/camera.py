@@ -1,9 +1,8 @@
 import imghdr
 import time
 from typing import Dict, Tuple
-from urllib.error import URLError
 
-from .exceptions import InvalidHome, NoDevice
+from .exceptions import ApiError, InvalidHome, NoDevice
 from .helpers import _BASE_URL, LOG
 
 _GETHOMEDATA_REQ = _BASE_URL + "api/gethomedata"
@@ -11,6 +10,7 @@ _GETCAMERAPICTURE_REQ = _BASE_URL + "api/getcamerapicture"
 _GETEVENTSUNTIL_REQ = _BASE_URL + "api/geteventsuntil"
 _SETPERSONSAWAY_REQ = _BASE_URL + "api/setpersonsaway"
 _SETPERSONSHOME_REQ = _BASE_URL + "api/setpersonshome"
+_SETSTATE_REQ = _BASE_URL + "api/setstate"
 
 
 class CameraData:
@@ -163,7 +163,6 @@ class CameraData:
                     if self.cameras[h_id][cam_id]["name"] == camera:
                         return self.cameras[h_id][cam_id]
         elif hid and camera:
-            hid = self.homeByName(home)["id"]
             if hid not in self.cameras:
                 return None
             for cam_id in self.cameras[hid]:
@@ -233,7 +232,7 @@ class CameraData:
         """
         cameratype = None
         if cid:
-            camera_data = self.cameraById(cid)
+            camera_data = self.get_camera(cid)
         else:
             camera_data = self.cameraByName(camera=camera, home=home, home_id=home_id)
         if camera_data:
@@ -254,7 +253,7 @@ class CameraData:
             cid = self.cameraByName(camera=camera, home=home)["id"]
         return self.camera_urls(cid=cid)
 
-    def camera_urls(self, cid: str = None) -> Tuple[str, str]:
+    def camera_urls(self, cid: str) -> Tuple[str, str]:
         """
         Return the vpn_url and the local_url (if available) of a given camera
         in order to access its live feed
@@ -262,26 +261,29 @@ class CameraData:
         local_url = None
         vpn_url = None
 
-        camera_data = self.cameraById(cid)
+        camera_data = self.get_camera(cid)
 
         if camera_data:
             vpn_url = camera_data.get("vpn_url")
             if camera_data.get("is_local"):
-                try:
-                    resp = self.authData.post_request(url=f"{vpn_url}/command/ping")
-                    temp_local_url = resp.get("local_url")
-                except URLError:
-                    return None, None
 
-                try:
-                    resp = self.authData.post_request(
-                        url=f"{temp_local_url}/command/ping"
-                    )
-                    if temp_local_url == resp.get("local_url"):
-                        local_url = temp_local_url
-                except URLError:
-                    pass
+                def check_url(url):
+                    if url is None:
+                        return None
+                    try:
+                        resp = self.authData.post_request(url=f"{url}/command/ping")
+                    except ApiError:
+                        return None
+                    else:
+                        return resp.get("local_url")
+
+                temp_local_url = check_url(vpn_url)
+                local_url = check_url(temp_local_url)
         return vpn_url, local_url
+
+    def get_light_state(self, cid: str) -> str:
+        """Return the current mode of the floodlight of a presence camera."""
+        return self.get_camera(cid).get("light_mode_status")
 
     def personsAtHome(self, home=None, home_id=None):
         """
@@ -406,6 +408,7 @@ class CameraData:
             except InvalidHome:
                 LOG.debug("Invalid Home %s", home)
                 return None
+
         if devicetype == "NACamera":
             # for the Welcome camera
             if not event:
@@ -415,6 +418,7 @@ class CameraData:
                 for cam_id in self.lastEvent:
                     listEvent[self.lastEvent[cam_id]["time"]] = self.lastEvent[cam_id]
                 event = listEvent[sorted(listEvent)[0]]
+
         if devicetype == "NOC":
             # for the Presence camera
             if not event:
@@ -426,6 +430,7 @@ class CameraData:
                         self.outdoor_lastEvent[cam_id]["time"]
                     ] = self.outdoor_lastEvent[cam_id]
                 event = listEvent[sorted(listEvent)[0]]
+
         if devicetype == "NSD":
             # for the smoke detector
             if not event:
@@ -442,11 +447,18 @@ class CameraData:
             "home_id": home_id,
             "event_id": event["id"],
         }
-        resp = self.authData.post_request(url=_GETEVENTSUNTIL_REQ, params=postParams)
         try:
+            resp = self.authData.post_request(
+                url=_GETEVENTSUNTIL_REQ, params=postParams
+            )
             eventList = resp["body"]["events_list"]
+        except ApiError:
+            pass
         except KeyError:
-            LOG.error("eventList body: %s", resp["body"])
+            LOG.debug("eventList response: %s", resp)
+            LOG.debug("eventList body: %s", resp["body"])
+            eventList = []
+
         for e in eventList:
             if e["type"] == "outdoor":
                 if e["camera_id"] not in self.outdoor_events:

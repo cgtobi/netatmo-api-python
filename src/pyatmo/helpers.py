@@ -7,6 +7,15 @@ LOG = logging.getLogger(__name__)
 
 _BASE_URL = "https://api.netatmo.com/"
 
+ERRORS = {
+    400: "Bad request",
+    401: "Unauthorized",
+    403: "Forbidden",
+    404: "Not found",
+    406: "Not Acceptable",
+    500: "Internal Server Error",
+}
+
 
 def toTimeString(value):
     return datetime.utcfromtimestamp(int(value)).isoformat(sep="_")

@@ -61,8 +61,12 @@ def test_postRequest_binary(auth, requests_mock):
 def test_postRequest_fail(auth, requests_mock, test_input, expected):
     """Test failing requests against the Netatmo API."""
     requests_mock.post(pyatmo.helpers._BASE_URL, status_code=test_input)
-    resp = auth.post_request(pyatmo.helpers._BASE_URL, None)
-    assert resp is expected
+    if test_input == 200:
+        resp = auth.post_request(pyatmo.helpers._BASE_URL, None)
+        assert resp is expected
+    else:
+        with pytest.raises(pyatmo.ApiError):
+            resp = auth.post_request(pyatmo.helpers._BASE_URL, None)
 
 
 def test_postRequest_timeout(auth, requests_mock):

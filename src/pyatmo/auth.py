@@ -5,7 +5,8 @@ import requests
 from oauthlib.oauth2 import LegacyApplicationClient, TokenExpiredError
 from requests_oauthlib import OAuth2Session
 
-from .helpers import _BASE_URL
+from .exceptions import ApiError
+from .helpers import _BASE_URL, ERRORS
 
 LOG = logging.getLogger(__name__)
 
@@ -67,7 +68,7 @@ class NetatmOAuth2:
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
         self.token_updater = token_updater
-        self.scope = " ".join(ALL_SCOPES)
+        self.scope = " ".join(ALL_SCOPES) if not scope else scope
 
         self.extra = {
             "client_id": self.client_id,
@@ -99,17 +100,44 @@ class NetatmOAuth2:
             params = {}
 
         if "http://" in url:
-            resp = requests.post(url, data=params, timeout=timeout)
-        else:
             try:
-                resp = self._oauth.post(url=url, data=params, timeout=timeout)
-            except TokenExpiredError:
-                self._oauth.token = self.refresh_tokens()
-                resp = self._oauth.post(url=url, data=params, timeout=timeout)
+                resp = requests.post(url, data=params, timeout=timeout)
+            except requests.exceptions.ChunkedEncodingError:
+                LOG.debug("Encoding error when connecting to '%s'", url)
+        else:
+
+            def query(url, params, timeout, retries):
+                if retries == 0:
+                    LOG.error("Too many retries")
+                    return
+                try:
+                    return self._oauth.post(url=url, data=params, timeout=timeout)
+                except TokenExpiredError:
+                    self._oauth.token = self.refresh_tokens()
+                    return query(url, params, timeout, retries - 1)
+
+            resp = query(url, params, timeout, 3)
+
+        if not resp:
+            raise ApiError(f"Error when accessing '{url}'")
 
         if not resp.ok:
-            LOG.error("The Netatmo API returned %s", resp.status_code)
+            LOG.debug("The Netatmo API returned %s", resp.status_code)
             LOG.debug("Netato API error: %s", resp.content)
+            if resp.status_code == 404:
+                raise ApiError(
+                    f"{resp.status_code} - "
+                    f"{ERRORS[resp.status_code]} - "
+                    f"when accessing '{url}'"
+                )
+            else:
+                raise ApiError(
+                    f"{resp.status_code} - "
+                    f"{ERRORS[resp.status_code]} - "
+                    f"{resp.json()['error']['message']} "
+                    f"({resp.json()['error']['code']}) "
+                    f"when accessing '{url}'"
+                )
 
         try:
             return (
