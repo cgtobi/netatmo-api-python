@@ -154,7 +154,7 @@ class WeatherStationData:
             if cond == "Wind":
                 # the Wind meter actually exposes the following conditions
                 conditions.extend(
-                    ["windangle", "windstrength", "gustangle", "guststrength"]
+                    ["WindAngle", "WindStrength", "GustAngle", "GustStrength"]
                 )
             elif cond == "Rain":
                 conditions.extend(["Rain", "sum_rain_24", "sum_rain_1"])
