@@ -2,7 +2,7 @@ import logging
 import time
 
 from .exceptions import NoDevice
-from .helpers import _BASE_URL, todayStamps
+from .helpers import _BASE_URL, fixId, todayStamps
 
 LOG = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class WeatherStationData:
         if resp is None or "body" not in resp:
             raise NoDevice("No weather station data returned by Netatmo server")
         try:
-            self.rawData = resp["body"].get("devices")
+            self.rawData = fixId(resp["body"].get("devices"))
         except KeyError:
             LOG.debug("No <body> in response %s", resp)
             raise NoDevice("No weather station data returned by Netatmo server")
@@ -79,7 +79,7 @@ class WeatherStationData:
         for s in stations:
             res[s["_id"]] = {
                 "station_name": s["station_name"],
-                "module_name": s["module_name"],
+                "module_name": s.get("module_name", "module"),
                 "id": s["_id"],
             }
 
