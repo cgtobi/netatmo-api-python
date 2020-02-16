@@ -61,10 +61,7 @@ class WeatherStationData:
         else:
             res.update([m["module_name"] for m in self.modules.values()])
             for s in self.stations.values():
-                try:
-                    res.add(s.get("module_name", "Station"))
-                except KeyError:
-                    res.add("Module")
+                res.add(s.get("module_name", "Station"))
         return list(res)
 
     def getModules(self, station=None, station_id=None):
