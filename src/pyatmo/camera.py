@@ -447,6 +447,8 @@ class CameraData:
             "home_id": home_id,
             "event_id": event["id"],
         }
+
+        eventList = []
         try:
             resp = self.authData.post_request(
                 url=_GETEVENTSUNTIL_REQ, params=postParams
@@ -457,7 +459,6 @@ class CameraData:
         except KeyError:
             LOG.debug("eventList response: %s", resp)
             LOG.debug("eventList body: %s", resp["body"])
-            eventList = []
 
         for e in eventList:
             if e["type"] == "outdoor":
