@@ -2,6 +2,8 @@ import imghdr
 import time
 from typing import Dict, Tuple
 
+from requests.exceptions import ReadTimeout
+
 from .exceptions import ApiError, InvalidHome, NoDevice
 from .helpers import _BASE_URL, LOG
 
@@ -272,7 +274,8 @@ class CameraData:
                         return None
                     try:
                         resp = self.authData.post_request(url=f"{url}/command/ping")
-                    except ApiError:
+                    except (ApiError, ReadTimeout):
+                        LOG.debug("Timeout validation the camera url %s", url)
                         return None
                     else:
                         return resp.get("local_url")

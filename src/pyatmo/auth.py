@@ -1,11 +1,10 @@
 import logging
+from time import sleep
 from typing import Callable, Dict, Optional, Tuple, Union
 
 import requests
 from oauthlib.oauth2 import LegacyApplicationClient, TokenExpiredError
-from requests.adapters import HTTPAdapter
 from requests_oauthlib import OAuth2Session
-from urllib3.util.retry import Retry
 
 from .exceptions import ApiError
 from .helpers import _BASE_URL, ERRORS
@@ -85,15 +84,6 @@ class NetatmOAuth2:
             scope=self.scope,
         )
 
-        retries = Retry(
-            total=5,
-            backoff_factor=0.3,
-            status_forcelist=[500, 502, 503, 504],
-            method_whitelist=frozenset(["GET", "POST"]),
-            raise_on_status=False,
-        )
-        self._oauth.mount("https://", HTTPAdapter(max_retries=retries))
-
     def refresh_tokens(self) -> Dict[str, Union[str, int]]:
         """Refresh and return new tokens."""
         token = self._oauth.refresh_token(_AUTH_REQ)
@@ -104,7 +94,7 @@ class NetatmOAuth2:
         return token
 
     def post_request(
-        self, url: str, params: Optional[Dict[str, str]] = None, timeout: int = 30
+        self, url: str, params: Optional[Dict[str, str]] = None, timeout: int = 5
     ):
         """Wrapper for post requests."""
         if not params:
@@ -125,6 +115,9 @@ class NetatmOAuth2:
                     return self._oauth.post(url=url, data=params, timeout=timeout)
                 except TokenExpiredError:
                     self._oauth.token = self.refresh_tokens()
+                    # Sleep for 1 sec to prevent authentication related
+                    # timeouts after a token refresh.
+                    sleep(1)
                     return query(url, params, timeout, retries - 1)
 
             resp = query(url, params, timeout, 3)
