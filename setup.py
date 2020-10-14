@@ -3,9 +3,11 @@
 
 from setuptools import find_packages, setup
 
+from version import __version__
+
 setup(
     name="pyatmo",
-    version="4.1.0",  # Should be updated with new versions
+    version=__version__,
     author="Hugo Dupras",
     author_email="jabesq@gmail.com",
     packages=find_packages(exclude=["tests"], where="src"),
