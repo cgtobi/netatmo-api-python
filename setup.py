@@ -18,7 +18,7 @@ setup(
     license="MIT",
     description=(
         "Simple API to access Netatmo weather station data from any Python 3 script. "
-        "Design for Home-Assitant (but not only)"
+        "Designed for Home-Assitant (but not only)"
     ),
     long_description=open("README.md").read(),
     install_requires=["requests", "requests_oauthlib", "oauthlib"],
