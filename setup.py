@@ -3,9 +3,11 @@
 
 from setuptools import find_packages, setup
 
+from version import __version__
+
 setup(
     name="pyatmo",
-    version="4.1.0",  # Should be updated with new versions
+    version=__version__,
     author="Hugo Dupras",
     author_email="jabesq@gmail.com",
     packages=find_packages(exclude=["tests"], where="src"),
@@ -16,7 +18,7 @@ setup(
     license="MIT",
     description=(
         "Simple API to access Netatmo weather station data from any Python 3 script. "
-        "Design for Home-Assitant (but not only)"
+        "Designed for Home-Assitant (but not only)"
     ),
     long_description=open("README.md").read(),
     install_requires=["requests", "requests_oauthlib", "oauthlib"],
