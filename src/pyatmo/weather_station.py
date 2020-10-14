@@ -47,6 +47,9 @@ class WeatherStationData:
         self.modules = {}
 
         for item in self.raw_data:
+            # The station name is sometimes not contained in the backend data
+            if "station_name" not in item:
+                item["station_name"] = item.get("home_name", item["type"])
 
             if "modules" not in item:
                 item["modules"] = [item]
@@ -211,22 +214,16 @@ class WeatherStationData:
     def check_not_updated(self, station_id: str, delay: int = 3600) -> List:
         """Check if a given station has not been updated."""
         res = self.get_last_data(station_id)
-        ret = []
-        for key, value in res.items():
-            if time.time() - value["When"] > delay:
-                ret.append(key)
-
-        return ret
+        return [
+            key for key, value in res.items() if time.time() - value["When"] > delay
+        ]
 
     def check_updated(self, station_id: str, delay: int = 3600) -> List:
         """Check if a given station has been updated."""
         res = self.get_last_data(station_id)
-        ret = []
-        for key, value in res.items():
-            if time.time() - value["When"] < delay:
-                ret.append(key)
-
-        return ret
+        return [
+            key for key, value in res.items() if time.time() - value["When"] < delay
+        ]
 
     def get_data(
         self,
