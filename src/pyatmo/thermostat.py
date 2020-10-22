@@ -12,7 +12,6 @@ _GETHOMESDATA_REQ = _BASE_URL + "api/homesdata"
 _GETHOMESTATUS_REQ = _BASE_URL + "api/homestatus"
 _SETTHERMMODE_REQ = _BASE_URL + "api/setthermmode"
 _SETROOMTHERMPOINT_REQ = _BASE_URL + "api/setroomthermpoint"
-_GETROOMMEASURE_REQ = _BASE_URL + "api/getroommeasure"
 _SWITCHHOMESCHEDULE_REQ = _BASE_URL + "api/switchhomeschedule"
 
 
